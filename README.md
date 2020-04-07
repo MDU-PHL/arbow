@@ -81,7 +81,7 @@ Usage: arbow [OPTIONS] ALN
 
 Options:
   --version
-  -a, --all-iupac               Print count of all IUPAC code for column
+  -i, --all-iupac               Print count of all IUPAC code for column
                                 stats?
 
   -s, --no-stream               Stop streaming stats to console
