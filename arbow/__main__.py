@@ -11,7 +11,8 @@ from Bio.Alphabet.IUPAC import IUPACAmbiguousDNA
 
 from .version import __version__ as version
 
-MAX_CORES = multiprocessing.cpu_count()
+TOTAL_CORES=multiprocessing.cpu_count()
+MAX_CORES = 16 if TOTAL_CORES > 16 else TOTAL_CORES
 
 logging.basicConfig(level=logging.INFO)
 logger = logging
@@ -148,7 +149,7 @@ def default_prefix(file_type):
 @click.option('-mm', '--max-missing', default=20, help="Remove sites with 'mm' missing sites or more", show_default=True)
 @click.option("-o", "--out-var-aln", default=default_prefix("aln")+".aln", help="Filename for alignment of variable sites.", show_default=True)
 @click.option("-p", "--prefix", default=default_prefix("tree"), show_default=True, help="Prefix to append to IQTree output files.")
-@click.option("-t", "--iqtree-threads", default=MAX_CORES, show_default=True, help="Number of cores to run IQtree")
+@click.option("-t", "--iqtree-threads", default=1, show_default=True, help="Number of cores to run IQtree")
 @click.option("-m", "--iqtree-models", default="HKY,TIM2,GTR", show_default=True, help="Substitution models to test.")
 @click.option("-f", "--iqtree-freq", default="F", show_default=True, help="Base frequency models to test.")
 @click.option("-r", "--iqtree-rates", default="G,R", show_default=True, help="Rate category models to test.")
