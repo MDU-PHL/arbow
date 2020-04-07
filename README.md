@@ -22,7 +22,7 @@ Currently, in step `4` above, columns that have a single `base` but still have m
 
 For step `5`, missing data (i.e., `-` and `N`) are all codes as `N`.
 
-Tests are underway to figure out 
+Tests are underway to figure out how these assumptions might affect the output.
 
 ## Dependencies
 
