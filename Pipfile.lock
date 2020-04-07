@@ -1,0 +1,27 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "d5a4ba37a916d2f84ebdf7dd6565abacb55157706496f86f2eab32e3ee89dbd2"
+        },
+        "pipfile-spec": 6,
+        "requires": {
+            "python_version": "3.7"
+        },
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "arbow": {
+            "path": "."
+        },
+        "e1839a8": {
+            "path": "."
+        }
+    },
+    "develop": {}
+}
