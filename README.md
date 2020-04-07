@@ -2,23 +2,25 @@
 
 ## Name
 
-We called `arbow` as that would be the phonetic pronounciation of the short, endearing, 
-terms for an [arborist](https://en.wikipedia.org/wiki/Arborist) in Australia.
+We named this tool `arbow` as that would be the phonetic pronounciation of the short, endearing, 
+term for an [arborist](https://en.wikipedia.org/wiki/Arborist) in Australia.
 
 ## What it does
 
-The goal of `arbow` is to automate and simplify the production of trees from multiple sequence alignments.
+The goal of `arbow` is to automate and simplify the production of trees from multiple sequence alignments. The tool 
+has been developed in the context of viral phylogenomics.
 
-In this version it does:
+In the current version (`0.1.0`) it:
 
-1. Reads all the alignment
-2. Calculates stats per column in the alignment
-3. Allows the user to set a threshold of tolerable missing data in a column, and `arbow` removes all non-conforming columns from the alignment
-4. From the remaining columns, `arbow` finds all the `constant` columns, and calculates the frequency of `A`, `C`, `G`, and `T`.
-5. It then filters out all the `variable` columns, and outputs that as a `multiFASTA` alignment.
-6. It runs `IQTree` with a few sensible `presets`
+1. Reads an alignment in `multiFASTA` format
+2. Calculates stats for each sequence in the alignment
+3. Calculates stats per column in the alignment
+4. Allows the user to set a threshold of tolerable missing data in a column, and removes all non-conforming columns from the alignment
+5. From the remaining columns, `arbow` finds all the `constant` columns, and calculates the frequency of `A`, `C`, `G`, and `T` sites (i.e., an alignment column with only `A` across all samples would count as `1` towards the overall frequency of `A`s in the alignment).
+6. It then filters out all the `variable` columns, and outputs the variable alignment as a `multiFASTA` alignment.
+7. It runs `IQTree` with a few sensible `presets`
 
-Currently, in step `4` above, columns that have a single `base` but still have missing data that did were not filtered out in step `3` are counted as being the `base`. In other words, if a `user` specifies a maximum number of 20 missing bases, and a column with 5 missing bases but with `A` in all samples, it will count towards `A` (i.e., majority consensus imputation).
+Currently, in step `4` above, columns that have a single observed `nucleotide` (e.g., `C`) but still have missing data that were not filtered out in step `3` are counted towards the overall frequency of that `base` in the alignment. In other words, if a `user` specifies a maximum number of 20 missing bases, and a column with 5 missing bases but with `A` in all other samples, that column will count towards the overall frequency of `A` in the alignment (i.e., majority consensus imputation). This assumptions is less risky the larger the number of samples in the alignment.
 
 For step `5`, missing data (i.e., `-` and `N`) are all codes as `N`.
 
@@ -62,13 +64,12 @@ Data about the each sequence in the alignment is prefixed with `[SEQ]`, and is f
 
 1. Count of each base (`A`, `C`, `G`, `T`, and `N` – `N` is any character other than `ACGT`)
 2. Percent missing data
-3. A status column that has 0, 1, 2, or 3 `*` depending on whether the percent missing data is `<0.5`, `>=0.5 and <1.0`, `>=1.0 and <5.0`, or `>=5`.
+3. A status column that has 0, 1, 2, or 3 `*` depending on whether the percent missing data is `<0.5`, `>=0.5 and <1.0`, `>=1.0 and <5.0`, or `>=5`, respectively.
 
 Data about each column in the alignment is prefixed with `[ALN]`, and is followed by:
 
 1. Position in the alignment
 2. Count of each base (bases counted will depend on whether all IUPAC codes are allowed or not - see below in usage)
-
 
 
 ## Command line
