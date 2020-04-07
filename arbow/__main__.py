@@ -143,7 +143,7 @@ def default_prefix(file_type):
 @click.command()
 @click.argument("aln")
 @click.option('--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True)
-@click.option("-a", "--all-iupac", is_flag=True, help="Print count of all IUPAC code for column stats?")
+@click.option("-i", "--all-iupac", is_flag=True, help="Print count of all IUPAC code for column stats?")
 @click.option("-s", "--no-stream", is_flag=True, help="Stop streaming stats to console")
 @click.option('-mm', '--max-missing', default=20, help="Remove sites with 'mm' missing sites or more", show_default=True)
 @click.option("-o", "--out-var-aln", default=default_prefix("aln")+".aln", help="Filename for alignment of variable sites.", show_default=True)
