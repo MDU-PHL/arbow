@@ -164,7 +164,7 @@ def default_prefix(file_type):
     )
 
 
-@click.command()
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("aln")
 @click.option(
     "--version", is_flag=True, callback=print_version, expose_value=False, is_eager=True
