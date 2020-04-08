@@ -32,7 +32,7 @@ def count_base(seq, base):
 
 
 def seq2series(seq):
-    seq_str = str(seq.seq).replace("-", "n")
+    seq_str = str(seq.seq).replace("-", "n").replace(" ", "n")
     return pd.Series(list(seq_str), name=seq.id)
 
 
