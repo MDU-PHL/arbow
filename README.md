@@ -10,13 +10,13 @@ term for an [arborist](https://en.wikipedia.org/wiki/Arborist) in Australia.
 The goal of `arbow` is to automate and simplify the production of trees from multiple sequence alignments. The tool 
 has been developed in the context of viral phylogenomics.
 
-In the current version (`0.1.0`) it:
+In the current version (`0.2.*`) it:
 
 1. Reads an alignment in `multiFASTA` format
 2. Calculates stats for each sequence in the alignment
 3. Calculates stats per column in the alignment
 4. Allows the user to set a threshold of tolerable missing data in a column, and removes all non-conforming columns from the alignment
-5. From the remaining columns, `arbow` finds all the `constant` columns, and calculates the frequency of `A`, `C`, `G`, and `T` sites (i.e., an alignment column with only `A` across all samples would count as `1` towards the overall frequency of `A`s in the alignment).
+5. From the remaining columns, `arbow` finds all the `constant` columns according to two `user` defined criteria: `allow missing data` (i.e., a column with missing data can still count to towards `constant` sites if it meets other criteria), and the frequency of the major allow is equal to or larger than a trheshold (i.e., if the threshold is set to 0.99 and there are 100 samples, 99 of which are `A` and one is `G`, that column would be counted as a constant `A`). Filtering by frequency allows one to remove potential sequencing error.
 6. It then filters out all the `variable` columns, and outputs the variable alignment as a `multiFASTA` alignment.
 7. It runs `IQTree` with a few sensible `presets`
 
