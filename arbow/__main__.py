@@ -101,10 +101,26 @@ def get_per_column_summary(tab, all_iupac=True, stream=True):
 #     return aln
 
 
-def is_const(col_data, allow_missing_data=True):
+def test_major_allele_freq(aln_col, major_freq):
+    mask = aln_col.index.isin(["n"])
+    bases = aln_col[~mask]
+    total = sum(bases)
+    freq = bases / total
+    return freq.max() >= major_freq
+
+
+def is_const(col_data, major_allele_freq, allow_missing_data=True):
     logger.info("Finding constant sites...")
-    if allow_missing_data:
+    if allow_missing_data and major_allele_freq == 1:
         const = col_data.apply(lambda x: any(x == (n_seqs - x.n)), axis=1)
+    elif allow_missing_data and major_allele_freq < 1.0:
+        const = col_data.apply(
+            lambda x: test_major_allele_freq(x, major_allele_freq), axis=1
+        )
+    elif major_allele_freq < 1.0:
+        const = col_data.apply(
+            lambda x: x.n == 0 and test_major_allele_freq(x, major_allele_freq), axis=1
+        )
     else:
         const = col_data.apply(lambda x: any(x == (n_seqs)) and x.n == 0, axis=1)
     logger.info(f"Total constant sites: {sum(const)}")
@@ -184,6 +200,13 @@ def default_prefix(file_type):
     show_default=True,
 )
 @click.option(
+    "-x",
+    "--major-allele-freq",
+    help="If major allele frequency is equal or larger than consider the site constant.",
+    default=0.99,
+    show_default=True,
+)
+@click.option(
     "-o",
     "--out-var-aln",
     default=default_prefix("aln") + ".aln",
@@ -251,6 +274,7 @@ def main(
     all_iupac,
     no_stream,
     max_missing,
+    major_allele_freq,
     out_var_aln,
     prefix,
     iqtree_threads,
@@ -265,7 +289,7 @@ def main(
     col_stats = get_per_column_summary(aln, all_iupac, not no_stream)
     included_sites_ix = include_sites(col_stats, max_missing=max_missing)
     included_col_stats = col_stats[included_sites_ix]
-    const_sites_ix = is_const(included_col_stats)
+    const_sites_ix = is_const(included_col_stats, major_allele_freq)
     var_sites_ix = const_sites_ix.index[~const_sites_ix].to_list()
     output_variable_aln(aln, var_sites_ix, outfile=out_var_aln)
     base_counts = get_base_counts(included_col_stats, const_sites_ix)
