@@ -119,7 +119,7 @@ Options:
 ### Get help
 
 ```
-arbow --help
+arbow <-h|--help>
 ```
 
 ### Get version
