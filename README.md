@@ -88,6 +88,10 @@ Options:
   -mm, --max-missing INTEGER    Remove sites with 'mm' missing sites or more
                                 [default: 20]
 
+  -x, --major-allele-freq FLOAT  If major allele frequency is equal or larger
+                                 than consider the site constant.  [default:
+                                 0.99]
+
   -o, --out-var-aln TEXT        Filename for alignment of variable sites.
                                 [default: aln-2020-04-07-150443.aln]
 
