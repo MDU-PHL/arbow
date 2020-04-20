@@ -55,6 +55,7 @@ pip<3> install arbow
 1. Generate a mulitple sequence alignment with your favourite aligner (e.g., MAFTT). Output a `multiFASTA` file.
 2. Run `arbow <aln.fa>`
 3. Open `tree-YYYY-MM-DD_HHMMSS.treefile` in your favourite tree viewer (e.g, FigTree)
+4. Open `tree-YYYY-MM-DD_HHMMSS_bb.treefile` or `tree-YYYY-MM-DD_HHMMSS_alrt.treefile` for branches with `ultra-fast bootstrap` support or `SH-aLRT` support only, respectively.
 
 ## Data stream
 
