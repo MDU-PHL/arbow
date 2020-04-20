@@ -2,6 +2,7 @@ import logging
 import subprocess
 import datetime
 import multiprocessing
+import re
 import click
 import pandas as pd
 import numpy as np
@@ -156,6 +157,20 @@ def output_variable_aln(aln, pos, outfile="var.aln"):
     logger.info(f"Wrote variable sitest to {outfile}")
 
 
+def output_separate_trees(prefix):
+    logger.info("Writting out separate trees for BB and aLRT....")
+    p = re.compile("\)(\d+\.?\d?\d?)\/(\d+):")
+    treefile = prefix + '.treefile'
+    bbtree = prefix + "_bb.treefile"
+    alrttree = prefix + "_alrt.treefile"
+    with open(treefile) as tr, open(bbtree, 'w') as bb, open(alrttree, 'w') as alrt:
+        tr = tr.read().strip()
+        bb.write(re.sub(p, ")\\2:", tr) + '\n')
+        alrt.write(re.sub(p, ")\\1:", tr) + '\n')
+
+
+
+
 def run_iqtree(
     aln_fn,
     base_counts,
@@ -285,26 +300,27 @@ def main(
     iqtree_bb,
     iqtree_alrt,
 ):
-    aln = fasta2df(aln)
-    col_stats = get_per_column_summary(aln, all_iupac, not no_stream)
-    included_sites_ix = include_sites(col_stats, max_missing=max_missing)
-    included_col_stats = col_stats[included_sites_ix]
-    const_sites_ix = is_const(included_col_stats, major_allele_freq)
-    var_sites_ix = const_sites_ix.index[~const_sites_ix].to_list()
-    output_variable_aln(aln, var_sites_ix, outfile=out_var_aln)
-    base_counts = get_base_counts(included_col_stats, const_sites_ix)
-    run_iqtree(
-        out_var_aln,
-        base_counts,
-        prefix,
-        mset=iqtree_models,
-        mfreq=iqtree_freq,
-        mrate=iqtree_rates,
-        bb=iqtree_bb,
-        alrt=iqtree_alrt,
-        threads=iqtree_threads,
-        cmax=iqtree_cmax,
-    )
+    # aln = fasta2df(aln)
+    # col_stats = get_per_column_summary(aln, all_iupac, not no_stream)
+    # included_sites_ix = include_sites(col_stats, max_missing=max_missing)
+    # included_col_stats = col_stats[included_sites_ix]
+    # const_sites_ix = is_const(included_col_stats, major_allele_freq)
+    # var_sites_ix = const_sites_ix.index[~const_sites_ix].to_list()
+    # output_variable_aln(aln, var_sites_ix, outfile=out_var_aln)
+    # base_counts = get_base_counts(included_col_stats, const_sites_ix)
+    # run_iqtree(
+    #     out_var_aln,
+    #     base_counts,
+    #     prefix,
+    #     mset=iqtree_models,
+    #     mfreq=iqtree_freq,
+    #     mrate=iqtree_rates,
+    #     bb=iqtree_bb,
+    #     alrt=iqtree_alrt,
+    #     threads=iqtree_threads,c
+    #     cmax=iqtree_cmax,
+    # )
+    output_separate_trees(prefix)
     logger.info(
         "Support values on tree are SH-aLRT (good support is >= 80%) and UFboot (good support is >= 95%)"
     )
