@@ -37,12 +37,54 @@ def seq2series(seq):
     return pd.Series(list(seq_str), name=seq.id)
 
 
+def clean_seqs(fasta, outfasta):
+    logger.info("Cleaning sequences...")
+    invalid_bases = re.compile("[^actg]", re.IGNORECASE)
+    find_n_strings = re.compile("n+", re.IGNORECASE)
+    find_n5_strings = re.compile("n{5,}", re.IGNORECASE)
+    with open(fasta) as fa, open(outfasta, "w") as ofa:
+        for rec in SeqIO.parse(fa, "fasta"):
+            rec_id = rec.id
+            seq = str(rec.seq)
+            len_seq = len(seq)
+            # make sure we only have `actg` and `n`
+            seq = re.sub(invalid_bases, "n", seq)
+            # find all the gaps
+            gaps = find_n_strings.findall(seq)
+            n_gaps = len(gaps)
+            # need to take care of the three cases:
+            #  1. if we have more than 1 gap
+            #  2. if we have only one gap
+            #  3. if we have no gaps
+            if n_gaps > 1:
+                len_gaps = [len(g) for g in gaps]
+                stat_summary = stats.describe(len_gaps)
+                print(
+                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{stat_summary.mean:0.3}\t{stat_summary.variance:0.3}\t{stat_summary.minmax[0]}\t{stat_summary.minmax[1]}"
+                )
+            elif n_gaps == 1:
+                len_gaps = [len(g) for g in gaps]
+                print(
+                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{len_gaps[0]}\t\t{len_gaps[0]}\t{len_gaps[0]}"
+                )
+            else:
+                print(f"[RSQ]{rec_id}\t{len_seq}\t0\t\t\t\t")
+            clean_seq = re.sub(find_n5_strings, "", seq)
+            ofa.write(f">{rec_id}\n{clean_seq}\n")
+    logger.info("Data clean...")
+
+
+def run_maftt(fasta):
+    logger.info("Running maftt...")
+    logger.info("Alignment ready...")
+
+
 def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
     logger.info("Loading FASTA alignment...")
     global n_seqs
     global aln_length
     recs = []
-    print("[SEQ]\tID\tA\tC\tG\tT\tN\tPROP_MISS\tLENGTH\tSTATUS")
+    print("[SEQ]ID\tA\tC\tG\tT\tN\tPROP_MISS\tLENGTH\tSTATUS")
     with open(fn) as fasta:
         for rec in SeqIO.parse(fasta, format="fasta"):
             seq_len = len(rec)
@@ -54,7 +96,7 @@ def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
             prop_missing = 100 * tN / seq_len
             lab = "*" * sum(np.array(labels) < prop_missing)
             print(
-                f"[SEQ]\t{rec.id}\t{tA}\t{tC}\t{tG}\t{tT}\t{tN}\t{100*tN/seq_len:.03}\t{seq_len}\t{lab}"
+                f"[SEQ]{rec.id}\t{tA}\t{tC}\t{tG}\t{tT}\t{tN}\t{100*tN/seq_len:.03}\t{seq_len}\t{lab}"
             )
             recs.append(seq2series(rec))
             n_seqs += 1
@@ -96,8 +138,8 @@ def get_per_column_summary(tab, all_iupac=True, stream=True):
     nucs += ["N"]
     letters = [l.lower() for l in nucs]
     if stream:
-        fmt_string = "[ALN]\t{pos}\t" + "\t".join([f"{{{l}}}" for l in letters])
-        header = "[ALN]\tpos\t" + "\t".join(letters)
+        fmt_string = "[ALN]{pos}\t" + "\t".join([f"{{{l}}}" for l in letters])
+        header = "[ALN]pos\t" + "\t".join(letters)
         print(header)
     else:
         fmt_string = None
