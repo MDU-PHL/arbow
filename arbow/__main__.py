@@ -62,6 +62,19 @@ def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
     return pd.DataFrame(recs)
 
 
+def trim_aln(aln_df, ref_seq="MN908947.3", five_prime_end=265, three_prime_start=29675):
+    logger.info("Trimming according to ref sequence...")
+    missing_in_ref = aln_df.loc[ref_seq,].apply(lambda nuc: nuc == "n")
+    logger.info(f"Found {sum(missing_in_ref)} introduced gaps into the ref...")
+    df_ref = aln_df.loc[:, ~missing_in_ref]
+    logger.info(f"New alignment length: {df_ref.shape[1]}...")
+    logger.info("Trimming 5' and 3' UTR regions...")
+    df_ref.columns = list(range(1, df_ref.shape[1] + 1))
+    df_ref = df_ref.loc[:, (five_prime_end + 1) : (three_prime_start - 1)]
+    logger.info(f"Clean alignment length: {df_ref.shape[1]}")
+    return df_ref
+
+
 def summary(row, letters, stream=True, fmt_string=None):
     bases = dict(zip(letters, [0] * len(letters)))
     for index, value in row.items():
@@ -160,15 +173,13 @@ def output_variable_aln(aln, pos, outfile="var.aln"):
 def output_separate_trees(prefix):
     logger.info("Writting out separate trees for BB and aLRT....")
     p = re.compile("\)(\d+\.?\d?\d?)\/(\d+):")
-    treefile = prefix + '.treefile'
+    treefile = prefix + ".treefile"
     bbtree = prefix + "_bb.treefile"
     alrttree = prefix + "_alrt.treefile"
-    with open(treefile) as tr, open(bbtree, 'w') as bb, open(alrttree, 'w') as alrt:
+    with open(treefile) as tr, open(bbtree, "w") as bb, open(alrttree, "w") as alrt:
         tr = tr.read().strip()
-        bb.write(re.sub(p, ")\\2:", tr) + '\n')
-        alrt.write(re.sub(p, ")\\1:", tr) + '\n')
-
-
+        bb.write(re.sub(p, ")\\2:", tr) + "\n")
+        alrt.write(re.sub(p, ")\\1:", tr) + "\n")
 
 
 def run_iqtree(
@@ -189,14 +200,16 @@ def run_iqtree(
     subprocess.run(cmd, shell=True, capture_output=True)
 
 
-def default_prefix(file_type):
+def default_prefix(file_type, outdir=None):
+    if outdir is not None:
+        file_type = pathlib.Path(outdir).joinpath(file_type)
     return f"{file_type}-" + datetime.datetime.strftime(
         datetime.datetime.now(), "%Y-%m-%d-%H%M%S"
     )
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
-@click.argument("aln")
+@click.argument("fasta")
 @click.option(
     "--version", is_flag=True, callback=print_version, expose_value=False, is_eager=True
 )
@@ -284,8 +297,27 @@ def default_prefix(file_type):
     show_default=True,
     help="Maximum number of rate categories to test.",
 )
+@click.option(
+    "-r",
+    "--ref-id",
+    default="MN908947.3",
+    help="Sequence ID of the reference",
+    show_default=True,
+)
+@click.option(
+    "--five-prime-end",
+    default=265,
+    help="Last base of the 5' UTR region in 1-index in the ref sequence",
+    show_default=True,
+)
+@click.option(
+    "--three-prime-start",
+    default=29675,
+    help="First base of the 3' UTR region in 1-index in the ref sequence",
+    show_default=True,
+)
 def main(
-    aln,
+    fasta,
     all_iupac,
     no_stream,
     max_missing,
@@ -299,8 +331,19 @@ def main(
     iqtree_cmax,
     iqtree_bb,
     iqtree_alrt,
+    ref_id,
+    five_prime_end,
+    three_prime_start,
 ):
-    aln = fasta2df(aln)
+    # outfa = default_prefix("arbow-clean-seqs") + ".fa"
+    # fasta = clean_seqs(fasta, outfa)
+    aln = fasta2df(fasta)
+    aln = trim_aln(
+        aln,
+        ref_seq=ref_id,
+        five_prime_end=five_prime_end,
+        three_prime_start=three_prime_start,
+    )
     col_stats = get_per_column_summary(aln, all_iupac, not no_stream)
     included_sites_ix = include_sites(col_stats, max_missing=max_missing)
     included_col_stats = col_stats[included_sites_ix]
