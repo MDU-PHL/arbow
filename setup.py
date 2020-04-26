@@ -46,7 +46,7 @@ setup(
     #
     packages=find_packages(where="."),  # Required
     python_requires=">=3.6, <4",
-    install_requires=["pandas", "click", "numpy", "biopython"],  # Optional
+    install_requires=["pandas", "click", "numpy", "biopython", "scipy"],  # Optional
     # extras_require={"dev": ["check-manifest"], "test": ["coverage"]},  # Optional
     # package_data={"sample": ["package_data.dat"]},  # Optional
     # data_files=[("my_data", ["data/data_file"])],  # Optional
