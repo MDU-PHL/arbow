@@ -234,7 +234,7 @@ def get_base_counts(col_stats, const_sites):
 
 
 def output_variable_aln(aln, pos, outfile="var.aln"):
-    aln = aln.loc[:, pos]
+    aln = aln.iloc[:, pos]
     fasta_str = "\n".join(
         aln.apply(lambda x: f">{x.name}\n{''.join(x.to_list())}", axis=1)
     )
