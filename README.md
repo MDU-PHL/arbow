@@ -14,11 +14,12 @@ In the current version (`0.2.*`) it:
 
 1. Reads an alignment in `multiFASTA` format
 2. Calculates stats for each sequence in the alignment
-3. Calculates stats per column in the alignment
-4. Allows the user to set a threshold of tolerable missing data in a column, and removes all non-conforming columns from the alignment
-5. From the remaining columns, `arbow` finds all the `constant` columns according to two `user` defined criteria: `allow missing data` (i.e., a column with missing data can still count to towards `constant` sites if it meets other criteria), and the frequency of the major allow is equal to or larger than a trheshold (i.e., if the threshold is set to 0.99 and there are 100 samples, 99 of which are `A` and one is `G`, that column would be counted as a constant `A`). Filtering by frequency allows one to remove potential sequencing error.
-6. It then filters out all the `variable` columns, and outputs the variable alignment as a `multiFASTA` alignment.
-7. It runs `IQTree` with a few sensible `presets`
+3. Trims 5/3 prime UTR regions --- defaults set to SARS-COV-2 (Genbank accession: `NC_045512.2`)
+4. Calculates stats per column in the alignment
+5. Allows the user to set a threshold of tolerable missing data in a column, and removes all non-conforming columns from the alignment
+6. From the remaining columns, `arbow` finds all the `constant` columns according to two `user` defined criteria: `allow missing data` (i.e., a column with missing data can still count to towards `constant` sites if it meets other criteria), and the frequency of the major allow is equal to or larger than a trheshold (i.e., if the threshold is set to 0.99 and there are 100 samples, 99 of which are `A` and one is `G`, that column would be counted as a constant `A`). Filtering by frequency allows one to remove potential sequencing error.
+7. It then filters out all the `variable` columns, and outputs the variable alignment as a `multiFASTA` alignment.
+8. It runs `IQTree` with a few sensible `presets`
 
 Currently, in step `4` above, columns that have a single observed `nucleotide` (e.g., `C`) but still have missing data that were not filtered out in step `3` are counted towards the overall frequency of that `base` in the alignment. In other words, if a `user` specifies a maximum number of 20 missing bases, and a column with 5 missing bases but with `A` in all other samples, that column will count towards the overall frequency of `A` in the alignment (i.e., majority consensus imputation). This assumptions is less risky the larger the number of samples in the alignment.
 
@@ -113,6 +114,15 @@ Options:
 
   -c, --iqtree-cmax INTEGER     Maximum number of rate categories to test.
                                 [default: 5]
+
+  -r, --ref-id TEXT              Sequence ID of the reference  [default:
+                                 MN908947.3]
+
+  --five-prime-end INTEGER       Last base of the 5' UTR region in 1-index in
+                                 the ref sequence  [default: 265]
+
+  --three-prime-start INTEGER    First base of the 3' UTR region in 1-index in
+                                 the ref sequence  [default: 29675]
 
   --help                        Show this message and exit.
 ```
