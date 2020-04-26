@@ -6,8 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-e1839a8 = {path = "."}
-arbow = {path = "."}
+arbow = {editable = true,path = "."}
 
 [requires]
 python_version = "3.7"
