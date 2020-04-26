@@ -3,9 +3,11 @@ import subprocess
 import datetime
 import multiprocessing
 import re
+import pathlib
 import click
 import pandas as pd
 import numpy as np
+from scipy import stats
 from Bio import SeqIO
 from Bio.Alphabet.IUPAC import IUPACAmbiguousDNA
 
@@ -106,15 +108,44 @@ def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
 
 def trim_aln(aln_df, ref_seq="MN908947.3", five_prime_end=265, three_prime_start=29675):
     logger.info("Trimming according to ref sequence...")
-    missing_in_ref = aln_df.loc[ref_seq,].apply(lambda nuc: nuc == "n")
+    missing_in_ref = aln_df.loc[ref_seq, ].apply(lambda nuc: nuc == "n")
     logger.info(f"Found {sum(missing_in_ref)} introduced gaps into the ref...")
     df_ref = aln_df.loc[:, ~missing_in_ref]
     logger.info(f"New alignment length: {df_ref.shape[1]}...")
     logger.info("Trimming 5' and 3' UTR regions...")
     df_ref.columns = list(range(1, df_ref.shape[1] + 1))
-    df_ref = df_ref.loc[:, (five_prime_end + 1) : (three_prime_start - 1)]
+    df_ref = df_ref.loc[:, (five_prime_end + 1): (three_prime_start - 1)]
     logger.info(f"Clean alignment length: {df_ref.shape[1]}")
     return df_ref
+
+
+def scrub_seq(seq, ref, window, threshold, substitution="*"):
+    new_seq = seq
+    for i in range(0, len(seq)):
+        q = seq[i:(i + window)]
+        if len(q) == window:
+            r = ref[i:(i + window)]
+            total_var = 0
+            total_n = 0
+            var_pos = []
+            for j, (x, y) in enumerate(zip(q, r)):
+                if x == '-' or x == 'n':
+                    total_n += 1
+                    continue
+                if x != y:
+                    total_var += 1
+                    var_pos += [j]
+                    continue
+            if (total_n + total_var) / window > threshold:
+                subs = "".join([b if k not in var_pos else substitution for k, b in enumerate(q)])
+                new_seq = new_seq[:i] + subs + new_seq[(i + 8):]
+    return new_seq
+
+
+def remove_gaps(seq, ix=None):
+    if ix is None:
+        ix = [i.start() for i in re.finditer("-", seq)]
+    return "".join([b for i, b in enumerate(seq) if i not in ix]), ix
 
 
 def summary(row, letters, stream=True, fmt_string=None):
@@ -214,7 +245,7 @@ def output_variable_aln(aln, pos, outfile="var.aln"):
 
 def output_separate_trees(prefix):
     logger.info("Writting out separate trees for BB and aLRT....")
-    p = re.compile("\)(\d+\.?\d?\d?)\/(\d+):")
+    p = re.compile("\\)(\\d+\\.?\\d?\\d?)\\/(\\d+):")
     treefile = prefix + ".treefile"
     bbtree = prefix + "_bb.treefile"
     alrttree = prefix + "_alrt.treefile"
