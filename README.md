@@ -10,7 +10,7 @@ term for an [arborist](https://en.wikipedia.org/wiki/Arborist) in Australia.
 The goal of `arbow` is to automate and simplify the production of trees from multiple sequence alignments. The tool 
 has been developed in the context of viral phylogenomics.
 
-In the current version (`0.2.*`) it:
+In the current version (`0.4.*`) it:
 
 1. Reads an alignment in `multiFASTA` format
 2. Calculates stats for each sequence in the alignment
