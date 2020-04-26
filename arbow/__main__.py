@@ -304,7 +304,7 @@ def default_prefix(file_type, outdir=None):
     "-x",
     "--major-allele-freq",
     help="If major allele frequency is equal or larger than consider the site constant.",
-    default=0.99,
+    default=0.999,
     show_default=True,
 )
 @click.option(
