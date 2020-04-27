@@ -10,7 +10,7 @@ term for an [arborist](https://en.wikipedia.org/wiki/Arborist) in Australia.
 The goal of `arbow` is to automate and simplify the production of trees from multiple sequence alignments. The tool 
 has been developed in the context of viral phylogenomics.
 
-In the current version (`0.4.*`) it:
+In the current version (`0.5.*`) it:
 
 1. Reads an alignment in `multiFASTA` format
 2. Calculates stats for each sequence in the alignment
@@ -124,6 +124,10 @@ Options:
   --three-prime-start INTEGER    First base of the 3' UTR region in 1-index in
                                  the ref sequence  [default: 29675]
 
+  --include-const                When outputting the clean alignment, leave
+                                 constant sites in the alignment. [default is
+                                 to remove]
+
   --help                        Show this message and exit.
 ```
 
@@ -145,6 +149,12 @@ Let us say that you wish to keep all sites in the alignment, and you have an ali
 
 ```
 arbow -x 1.0 -m 200 <in.aln>
+```
+
+### Keep constant sites in the clean alignment
+
+```
+arbow --include-const <in.aln>
 ```
 
 ### Get help
