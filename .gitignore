@@ -5,3 +5,6 @@ dist
 build
 test
 *.fa
+aln*
+tree*
+log
