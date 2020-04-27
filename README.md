@@ -1,6 +1,6 @@
 # Arbow: cultivate your multiple sequence aligment to get better trees
 
-![PyPI](https://img.shields.io/pypi/v/arbow?style=flat-square)
+![PyPI](https://img.shields.io/pypi/v/arbow?style=flat-square) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/arbow?style=flat-square)
 
 ## Name
 
