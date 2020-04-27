@@ -1,6 +1,10 @@
 #/bin/bash
 git update-index --refresh 
-git diff-index --quiet HEAD -- || echo "Untracked changes..."; exit 1
+git diff-index --quiet HEAD --
+if [[ $? -eq 1 ]]; then
+    echo "There are untracked changes... Please commit them before doing a new release."
+    exit 1
+fi
 echo "# Before you deploy, have you:"
 echo "# 1. Checked that the version number has been bumped, and commited?"
 echo "# 2. Checked that the version of software in the README is correct, and commited any changes?"
