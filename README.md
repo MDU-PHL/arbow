@@ -1,5 +1,7 @@
 # Arbow: cultivate your multiple sequence aligment to get better trees
 
+![PyPI](https://img.shields.io/pypi/v/arbow?style=flat-square)
+
 ## Name
 
 We named this tool `arbow` as that would be the phonetic pronounciation of the short, endearing, 
