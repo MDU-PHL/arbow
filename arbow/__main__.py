@@ -233,8 +233,9 @@ def get_base_counts(col_stats, const_sites):
     return base_counts
 
 
-def output_variable_aln(aln, pos, outfile="var.aln"):
-    aln = aln.iloc[:, pos]
+def output_aln(aln, pos, outfile="var.aln", filter_const=True):
+    if filter_const:
+        aln = aln.iloc[:, pos]
     fasta_str = "\n".join(
         aln.apply(lambda x: f">{x.name}\n{''.join(x.to_list())}", axis=1)
     )
@@ -266,9 +267,12 @@ def run_iqtree(
     bb=1000,
     alrt=1000,
     threads=8,
+    include_const=False
 ):
-    fconst = "{a},{c},{g},{t}".format(**base_counts)
-    cmd = f"iqtree -s {aln_fn} -pre {pre} -mset {mset} -mfreq {mfreq} -mrate {mrate} -bb {bb} -alrt {alrt} -fconst {fconst} -nt {threads}"
+    cmd = f"iqtree -s {aln_fn} -pre {pre} -mset {mset} -mfreq {mfreq} -mrate {mrate} -bb {bb} -alrt {alrt} -nt {threads}"
+    if not include_const:
+        fconst = "{a},{c},{g},{t}".format(**base_counts)
+        cmd += f" -fconst {fconst}"
     logging.info(f"Running: {cmd}")
     subprocess.run(cmd, shell=True, capture_output=True)
 
@@ -389,6 +393,7 @@ def default_prefix(file_type, outdir=None):
     help="First base of the 3' UTR region in 1-index in the ref sequence",
     show_default=True,
 )
+@click.option("--include-const", is_flag=True, help="When outputting the clean alignment, leave constant sites in the alignment. [default is to remove]")
 def main(
     fasta,
     all_iupac,
@@ -407,6 +412,7 @@ def main(
     ref_id,
     five_prime_end,
     three_prime_start,
+    include_const
 ):
     # outfa = default_prefix("arbow-clean-seqs") + ".fa"
     # fasta = clean_seqs(fasta, outfa)
@@ -422,7 +428,8 @@ def main(
     included_col_stats = col_stats[included_sites_ix]
     const_sites_ix = is_const(included_col_stats, major_allele_freq)
     var_sites_ix = const_sites_ix.index[~const_sites_ix].to_list()
-    output_variable_aln(aln, var_sites_ix, outfile=out_var_aln)
+    aln = aln.loc[:, included_sites_ix.to_list()]
+    output_aln(aln, var_sites_ix, outfile=out_var_aln, filter_const=not include_const)
     base_counts = get_base_counts(included_col_stats, const_sites_ix)
     run_iqtree(
         out_var_aln,
@@ -435,6 +442,7 @@ def main(
         alrt=iqtree_alrt,
         threads=iqtree_threads,
         cmax=iqtree_cmax,
+        include_const=include_const
     )
     output_separate_trees(prefix)
     logger.info(
