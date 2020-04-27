@@ -127,6 +127,26 @@ Options:
   --help                        Show this message and exit.
 ```
 
+## Default behaviour explained
+
+By default, `arbow` will remove any site in the alignment that has `20` missing data points or more, will trim the 5' and 3' UTR regions, and will consider as constant any site that has a major allele frequency larger or equal to 0.997.
+
+### Remove sites with any gaps in the alignment 
+
+Let us say that you wish to remove all sites in the alignment that have **any** missing data, and retain all complete columns:
+
+```
+arbow -x 1.0 -mm 0 <in.aln>
+```
+
+### Keep all sites in an alignment (i.e., skip any filtering)
+
+Let us say that you wish to keep all sites in the alignment, and you have an alignment with 200 sequences:
+
+```
+arbow -x 1.0 -m 200 <in.aln>
+```
+
 ### Get help
 
 ```
