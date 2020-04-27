@@ -216,7 +216,7 @@ def is_const(col_data, major_allele_freq, allow_missing_data=True):
 
 
 def include_sites(col_data, max_missing=20):
-    included_ix = col_data.eval(f"n<{max_missing}")
+    included_ix = col_data.eval(f"n<={max_missing}")
     logger.info(f"Total included sites: {sum(included_ix)}")
     logger.info(f"Total removed sites: {sum(~included_ix)}")
     return included_ix
