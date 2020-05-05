@@ -5,6 +5,7 @@ import multiprocessing
 import re
 import pathlib
 import click
+import sys
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -107,15 +108,22 @@ def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
 
 
 def trim_aln(aln_df, ref_seq="MN908947.3", five_prime_end=265, three_prime_start=29675):
-    logger.info("Trimming according to ref sequence...")
-    missing_in_ref = aln_df.loc[ref_seq,].apply(lambda nuc: nuc == "n")
-    logger.info(f"Found {sum(missing_in_ref)} introduced gaps into the ref...")
-    df_ref = aln_df.loc[:, ~missing_in_ref]
-    logger.info(f"New alignment length: {df_ref.shape[1]}...")
-    logger.info("Trimming 5' and 3' UTR regions...")
-    df_ref.columns = list(range(1, df_ref.shape[1] + 1))
-    df_ref = df_ref.loc[:, (five_prime_end + 1) : (three_prime_start - 1)]
-    logger.info(f"Clean alignment length: {df_ref.shape[1]}")
+    try:
+        logger.info("Trimming according to ref sequence...")
+        missing_in_ref = aln_df.loc[ref_seq,].apply(lambda nuc: nuc == "n")
+        logger.info(f"Found {sum(missing_in_ref)} introduced gaps into the ref...")
+        df_ref = aln_df.loc[:, ~missing_in_ref]
+        logger.info(f"New alignment length: {df_ref.shape[1]}...")
+        logger.info("Trimming 5' and 3' UTR regions...")
+        df_ref.columns = list(range(1, df_ref.shape[1] + 1))
+        df_ref = df_ref.loc[:, (five_prime_end + 1) : (three_prime_start - 1)]
+        logger.info(f"Clean alignment length: {df_ref.shape[1]}")
+    except KeyError:
+        logger.critical(f"Did not find any sequence with id {ref_seq} in alignment!")
+        sys.exit(1)
+    except Exception as e:
+        logger.critical(e)
+        sys.exit(1)
     return df_ref
 
 
