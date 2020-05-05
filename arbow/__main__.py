@@ -40,7 +40,7 @@ def seq2series(seq):
     return pd.Series(list(seq_str), name=seq.id)
 
 
-def clean_seqs(fasta, outfasta):
+def clean_seqs(fasta, outfasta, log):
     logger.info("Cleaning sequences...")
     invalid_bases = re.compile("[^actg]", re.IGNORECASE)
     find_n_strings = re.compile("n+", re.IGNORECASE)
@@ -63,15 +63,16 @@ def clean_seqs(fasta, outfasta):
                 len_gaps = [len(g) for g in gaps]
                 stat_summary = stats.describe(len_gaps)
                 print(
-                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{stat_summary.mean:0.3}\t{stat_summary.variance:0.3}\t{stat_summary.minmax[0]}\t{stat_summary.minmax[1]}"
+                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{stat_summary.mean:0.3}\t{stat_summary.variance:0.3}\t{stat_summary.minmax[0]}\t{stat_summary.minmax[1]}",
+                    file=log
                 )
             elif n_gaps == 1:
                 len_gaps = [len(g) for g in gaps]
                 print(
-                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{len_gaps[0]}\t\t{len_gaps[0]}\t{len_gaps[0]}"
+                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{len_gaps[0]}\t\t{len_gaps[0]}\t{len_gaps[0]}", file=log
                 )
             else:
-                print(f"[RSQ]{rec_id}\t{len_seq}\t0\t\t\t\t")
+                print(f"[RSQ]{rec_id}\t{len_seq}\t0\t\t\t\t", file=log)
             clean_seq = re.sub(find_n5_strings, "", seq)
             ofa.write(f">{rec_id}\n{clean_seq}\n")
     logger.info("Data clean...")
@@ -82,12 +83,12 @@ def run_maftt(fasta):
     logger.info("Alignment ready...")
 
 
-def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
+def fasta2df(fn, labels=[0.5, 1.0, 5.0], log=sys.stdout):
     logger.info("Loading FASTA alignment...")
     global n_seqs
     global aln_length
     recs = []
-    print("[SEQ]ID\tA\tC\tG\tT\tN\tPROP_MISS\tLENGTH\tSTATUS")
+    print("[SEQ]ID\tA\tC\tG\tT\tN\tPROP_MISS\tLENGTH\tSTATUS", file=log)
     with open(fn) as fasta:
         for rec in SeqIO.parse(fasta, format="fasta"):
             seq_len = len(rec)
@@ -99,7 +100,8 @@ def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
             prop_missing = 100 * tN / seq_len
             lab = "*" * sum(np.array(labels) < prop_missing)
             print(
-                f"[SEQ]{rec.id}\t{tA}\t{tC}\t{tG}\t{tT}\t{tN}\t{100*tN/seq_len:.03}\t{seq_len}\t{lab}"
+                f"[SEQ]{rec.id}\t{tA}\t{tC}\t{tG}\t{tT}\t{tN}\t{100*tN/seq_len:.03}\t{seq_len}\t{lab}",
+                file=log
             )
             recs.append(seq2series(rec))
             n_seqs += 1
@@ -158,7 +160,7 @@ def remove_gaps(seq, ix=None):
     return "".join([b for i, b in enumerate(seq) if i not in ix]), ix
 
 
-def summary(row, letters, stream=True, fmt_string=None):
+def summary(row, letters, stream=True, fmt_string=None, log=sys.stdout):
     bases = dict(zip(letters, [0] * len(letters)))
     for index, value in row.items():
         try:
@@ -166,11 +168,11 @@ def summary(row, letters, stream=True, fmt_string=None):
         except Exception:
             bases["n"] += 1
     if stream and fmt_string:
-        print(fmt_string.format(pos=row.name, **bases))
+        print(fmt_string.format(pos=row.name, **bases), file=log)
     return bases
 
 
-def get_per_column_summary(tab, all_iupac=True, stream=True):
+def get_per_column_summary(tab, all_iupac=True, stream=True, log=sys.stdout):
     logger.info("Getting column stats...")
     alphabet = IUPACAmbiguousDNA()
     nucs = sorted(list(alphabet.letters[0:4]))
@@ -181,11 +183,11 @@ def get_per_column_summary(tab, all_iupac=True, stream=True):
     if stream:
         fmt_string = "[ALN]{pos}\t" + "\t".join([f"{{{l}}}" for l in letters])
         header = "[ALN]pos\t" + "\t".join(letters)
-        print(header)
+        print(header, file=log)
     else:
         fmt_string = None
     return pd.DataFrame(
-        tab.apply(lambda x: summary(x, letters, stream, fmt_string), axis=0).to_list()
+        tab.apply(lambda x: summary(x, letters, stream, fmt_string, log=log), axis=0).to_list()
     )
 
 
@@ -416,6 +418,7 @@ def default_prefix(file_type, outdir=None):
     is_flag=True,
     help="When outputting the clean alignment, leave constant sites in the alignment. [default is to remove]",
 )
+@click.option("-l", "--log", type=click.File("w"), default="arbow_stats.log", help="Log file to store output. Use '-' to log to stdout", show_default=True)
 def main(
     fasta,
     all_iupac,
@@ -435,17 +438,18 @@ def main(
     five_prime_end,
     three_prime_start,
     include_const,
+    log
 ):
     # outfa = default_prefix("arbow-clean-seqs") + ".fa"
     # fasta = clean_seqs(fasta, outfa)
-    aln = fasta2df(fasta)
+    aln = fasta2df(fasta, log=log)
     aln = trim_aln(
         aln,
         ref_seq=ref_id,
         five_prime_end=five_prime_end,
         three_prime_start=three_prime_start,
     )
-    col_stats = get_per_column_summary(aln, all_iupac, not no_stream)
+    col_stats = get_per_column_summary(aln, all_iupac, not no_stream, log=log)
     included_sites_ix = include_sites(col_stats, max_missing=max_missing)
     included_col_stats = col_stats[included_sites_ix]
     const_sites_ix = is_const(included_col_stats, major_allele_freq)
