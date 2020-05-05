@@ -129,7 +129,10 @@ Options:
   --include-const                When outputting the clean alignment, leave
                                  constant sites in the alignment. [default is
                                  to remove]
-
+  
+  -l, --log FILENAME             Log file to store output. Use '-' to log to
+                                 stdout  [default: arbow_stats.log]
+                                 
   --help                        Show this message and exit.
 ```
 
