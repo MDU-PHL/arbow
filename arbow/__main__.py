@@ -8,7 +8,7 @@ import click
 import sys
 import pandas as pd
 import numpy as np
-from scipy import stats
+from scipy import stats # noqa
 from Bio import SeqIO
 from Bio.Alphabet.IUPAC import IUPACAmbiguousDNA
 
