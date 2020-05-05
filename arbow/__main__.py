@@ -108,13 +108,13 @@ def fasta2df(fn, labels=[0.5, 1.0, 5.0]):
 
 def trim_aln(aln_df, ref_seq="MN908947.3", five_prime_end=265, three_prime_start=29675):
     logger.info("Trimming according to ref sequence...")
-    missing_in_ref = aln_df.loc[ref_seq, ].apply(lambda nuc: nuc == "n")
+    missing_in_ref = aln_df.loc[ref_seq,].apply(lambda nuc: nuc == "n")
     logger.info(f"Found {sum(missing_in_ref)} introduced gaps into the ref...")
     df_ref = aln_df.loc[:, ~missing_in_ref]
     logger.info(f"New alignment length: {df_ref.shape[1]}...")
     logger.info("Trimming 5' and 3' UTR regions...")
     df_ref.columns = list(range(1, df_ref.shape[1] + 1))
-    df_ref = df_ref.loc[:, (five_prime_end + 1): (three_prime_start - 1)]
+    df_ref = df_ref.loc[:, (five_prime_end + 1) : (three_prime_start - 1)]
     logger.info(f"Clean alignment length: {df_ref.shape[1]}")
     return df_ref
 
@@ -122,14 +122,14 @@ def trim_aln(aln_df, ref_seq="MN908947.3", five_prime_end=265, three_prime_start
 def scrub_seq(seq, ref, window, threshold, substitution="*"):
     new_seq = seq
     for i in range(0, len(seq)):
-        q = seq[i:(i + window)]
+        q = seq[i : (i + window)]
         if len(q) == window:
-            r = ref[i:(i + window)]
+            r = ref[i : (i + window)]
             total_var = 0
             total_n = 0
             var_pos = []
             for j, (x, y) in enumerate(zip(q, r)):
-                if x == '-' or x == 'n':
+                if x == "-" or x == "n":
                     total_n += 1
                     continue
                 if x != y:
@@ -137,8 +137,10 @@ def scrub_seq(seq, ref, window, threshold, substitution="*"):
                     var_pos += [j]
                     continue
             if (total_n + total_var) / window > threshold:
-                subs = "".join([b if k not in var_pos else substitution for k, b in enumerate(q)])
-                new_seq = new_seq[:i] + subs + new_seq[(i + 8):]
+                subs = "".join(
+                    [b if k not in var_pos else substitution for k, b in enumerate(q)]
+                )
+                new_seq = new_seq[:i] + subs + new_seq[(i + 8) :]
     return new_seq
 
 
@@ -275,7 +277,7 @@ def run_iqtree(
     bb=1000,
     alrt=1000,
     threads=8,
-    include_const=False
+    include_const=False,
 ):
     cmd = f"iqtree -s {aln_fn} -pre {pre} -mset {mset} -mfreq {mfreq} -mrate {mrate} -bb {bb} -alrt {alrt} -nt {threads}"
     if not include_const:
@@ -401,7 +403,11 @@ def default_prefix(file_type, outdir=None):
     help="First base of the 3' UTR region in 1-index in the ref sequence",
     show_default=True,
 )
-@click.option("--include-const", is_flag=True, help="When outputting the clean alignment, leave constant sites in the alignment. [default is to remove]")
+@click.option(
+    "--include-const",
+    is_flag=True,
+    help="When outputting the clean alignment, leave constant sites in the alignment. [default is to remove]",
+)
 def main(
     fasta,
     all_iupac,
@@ -420,7 +426,7 @@ def main(
     ref_id,
     five_prime_end,
     three_prime_start,
-    include_const
+    include_const,
 ):
     # outfa = default_prefix("arbow-clean-seqs") + ".fa"
     # fasta = clean_seqs(fasta, outfa)
@@ -450,7 +456,7 @@ def main(
         alrt=iqtree_alrt,
         threads=iqtree_threads,
         cmax=iqtree_cmax,
-        include_const=include_const
+        include_const=include_const,
     )
     output_separate_trees(prefix)
     logger.info(
