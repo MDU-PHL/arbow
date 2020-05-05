@@ -337,14 +337,14 @@ def default_prefix(file_type, outdir=None):
 @click.option(
     "-o",
     "--out-var-aln",
-    default=default_prefix("aln") + ".aln",
+    default=default_prefix("arbow-aln") + ".aln",
     help="Filename for alignment of variable sites.",
     show_default=True,
 )
 @click.option(
     "-p",
     "--prefix",
-    default=default_prefix("tree"),
+    default=default_prefix("arbow-tree"),
     show_default=True,
     help="Prefix to append to IQTree output files.",
 )
@@ -425,7 +425,7 @@ def default_prefix(file_type, outdir=None):
     "-l",
     "--log",
     type=click.File("w"),
-    default="arbow_stats.log",
+    default=default_prefix("arbow") + ".log",
     help="Log file to store output. Use '-' to log to stdout",
     show_default=True,
 )
