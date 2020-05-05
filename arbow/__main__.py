@@ -216,6 +216,14 @@ def is_const(col_data, major_allele_freq, allow_missing_data=True):
 
 
 def include_sites(col_data, max_missing=20):
+    """
+    Identify the sites to be included in the final alignment based on the 
+    number of missing data points. 
+
+    Input: a table of counts of bases per column in the alignment, including missing or 
+           gappy sites
+    Output: a boolean Pandas Series indicating the position of the sites to keep
+    """
     included_ix = col_data.eval(f"n<={max_missing}")
     logger.info(f"Total included sites: {sum(included_ix)}")
     logger.info(f"Total removed sites: {sum(~included_ix)}")
