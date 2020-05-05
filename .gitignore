@@ -3,7 +3,6 @@ __pycache__
 *egg*
 dist
 build
-test
 *.fa
 aln*
 tree*
