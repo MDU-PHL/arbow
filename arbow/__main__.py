@@ -64,12 +64,13 @@ def clean_seqs(fasta, outfasta, log):
                 stat_summary = stats.describe(len_gaps)
                 print(
                     f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{stat_summary.mean:0.3}\t{stat_summary.variance:0.3}\t{stat_summary.minmax[0]}\t{stat_summary.minmax[1]}",
-                    file=log
+                    file=log,
                 )
             elif n_gaps == 1:
                 len_gaps = [len(g) for g in gaps]
                 print(
-                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{len_gaps[0]}\t\t{len_gaps[0]}\t{len_gaps[0]}", file=log
+                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{len_gaps[0]}\t\t{len_gaps[0]}\t{len_gaps[0]}",
+                    file=log,
                 )
             else:
                 print(f"[RSQ]{rec_id}\t{len_seq}\t0\t\t\t\t", file=log)
@@ -101,7 +102,7 @@ def fasta2df(fn, labels=[0.5, 1.0, 5.0], log=sys.stdout):
             lab = "*" * sum(np.array(labels) < prop_missing)
             print(
                 f"[SEQ]{rec.id}\t{tA}\t{tC}\t{tG}\t{tT}\t{tN}\t{100*tN/seq_len:.03}\t{seq_len}\t{lab}",
-                file=log
+                file=log,
             )
             recs.append(seq2series(rec))
             n_seqs += 1
@@ -187,7 +188,9 @@ def get_per_column_summary(tab, all_iupac=True, stream=True, log=sys.stdout):
     else:
         fmt_string = None
     return pd.DataFrame(
-        tab.apply(lambda x: summary(x, letters, stream, fmt_string, log=log), axis=0).to_list()
+        tab.apply(
+            lambda x: summary(x, letters, stream, fmt_string, log=log), axis=0
+        ).to_list()
     )
 
 
@@ -418,7 +421,14 @@ def default_prefix(file_type, outdir=None):
     is_flag=True,
     help="When outputting the clean alignment, leave constant sites in the alignment. [default is to remove]",
 )
-@click.option("-l", "--log", type=click.File("w"), default="arbow_stats.log", help="Log file to store output. Use '-' to log to stdout", show_default=True)
+@click.option(
+    "-l",
+    "--log",
+    type=click.File("w"),
+    default="arbow_stats.log",
+    help="Log file to store output. Use '-' to log to stdout",
+    show_default=True,
+)
 def main(
     fasta,
     all_iupac,
@@ -438,7 +448,7 @@ def main(
     five_prime_end,
     three_prime_start,
     include_const,
-    log
+    log,
 ):
     # outfa = default_prefix("arbow-clean-seqs") + ".fa"
     # fasta = clean_seqs(fasta, outfa)
