@@ -282,7 +282,7 @@ def run_iqtree(
         fconst = "{a},{c},{g},{t}".format(**base_counts)
         cmd += f" -fconst {fconst}"
     logging.info(f"Running: {cmd}")
-    subprocess.run(cmd, shell=True, capture_output=True)
+    subprocess.run(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
 def default_prefix(file_type, outdir=None):
