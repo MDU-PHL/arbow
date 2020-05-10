@@ -131,8 +131,9 @@ Options:
                                  to remove]
   
   -l, --log FILENAME             Log file to store output. Use '-' to log to
-                                 stdout  [default: arbow_stats.log]
-                                 
+                                 stdout  [default:
+                                 arbow-2020-05-05-153619.log]
+
   --help                        Show this message and exit.
 ```
 
