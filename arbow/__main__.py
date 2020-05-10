@@ -14,8 +14,6 @@ from Bio.Alphabet.IUPAC import IUPACAmbiguousDNA
 
 from .version import __version__ as version
 
-TOTAL_CORES = multiprocessing.cpu_count()
-MAX_CORES = 16 if TOTAL_CORES > 16 else TOTAL_CORES
 
 logging.basicConfig(level=logging.INFO)
 logger = logging
