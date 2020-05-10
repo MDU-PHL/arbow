@@ -266,7 +266,7 @@ def output_aln(aln, pos, outfile="var.aln", filter_const=True):
 
 
 def output_separate_trees(prefix):
-    logger.info("Writting out separate trees for BB and aLRT....")
+    logger.info("Writing out separate trees for BB and aLRT....")
     p = re.compile("\\)(\\d+\\.?\\d?\\d?)\\/(\\d+):")
     treefile = prefix + ".treefile"
     bbtree = prefix + "_bb.treefile"
