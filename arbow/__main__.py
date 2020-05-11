@@ -101,6 +101,12 @@ def fasta2df(fn, labels=(0.5, 1.0, 5.0), log=sys.stdout):
             seq_len = len(rec)
             if n_seqs == 0:
                 aln_length = seq_len
+            else:
+                if seq_len != aln_length:
+                    logging.error(f"Sequences do not appear to be aligned. "
+                                  f"Please run an alignment program, such as MAFTT "
+                                  f"before using arbow")
+                    sys.exit()
             tA, tC, tG, tT = [count_base(rec, base) for base in ["a", "c", "g", "t"]]
             total_valid_bases = sum([tA, tC, tG, tT])
             tN = seq_len - total_valid_bases
