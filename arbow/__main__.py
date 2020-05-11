@@ -131,6 +131,11 @@ def trim_aln(aln_df, ref_seq="MN908947.3", five_prime_end=265, three_prime_start
 
 
 def scrub_seq(seq, ref, window, threshold, substitution="*"):
+    """
+    TODO --- implementation pending
+    The idea here is to implement a rolling window to apply some filtering
+    options.
+    """
     new_seq = seq
     for i in range(0, len(seq)):
         q = seq[i : (i + window)]
