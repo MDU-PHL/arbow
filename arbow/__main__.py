@@ -366,7 +366,7 @@ def output_aln(aln, pos, outfile="var.aln", filter_const=True):
     )
     with open(outfile, "w") as fasta:
         fasta.write(fasta_str)
-    logger.info(f"Wrote variable sitest to {outfile}")
+    logger.info(f"Wrote variable sites to {outfile}")
 
 
 def output_separate_trees(prefix):
