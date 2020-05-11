@@ -190,8 +190,9 @@ def summary(row, letters, stream=True, fmt_string=None, log=sys.stdout):
             bases[value] += 1
         except KeyError:
             bases["n"] += 1
+    bases['pos'] = row.name
     if stream and fmt_string:
-        print(fmt_string.format(pos=row.name, **bases), file=log)
+        print(fmt_string.format(**bases), file=log)
     return bases
 
 
@@ -321,7 +322,7 @@ def is_const(col_data, max_alt_count=None, min_major_allele_freq=None, allow_mis
         logger.critical("Current filtering parameters resulted in no variable sites remaining."
                          " Try relaxing your search.")
         sys.exit(1)
-    return const
+    return col_data[const]['pos'], col_data[~const]['pos']
 
 
 def include_sites(col_data, max_missing_count=None, max_missing_proportion=None):
@@ -363,7 +364,7 @@ def include_sites(col_data, max_missing_count=None, max_missing_proportion=None)
 
 
 def get_base_counts(col_stats, const_sites):
-    const_sites = col_stats[const_sites]
+    const_sites = col_stats.set_index('pos').loc[const_sites]
     base_counts = (
         const_sites.apply(lambda x: x.idxmax(), axis=1).value_counts().to_dict()
     )
@@ -708,14 +709,12 @@ def main(
         allow_missing = True
     else:
         allow_missing = False
-    const_sites_ix = is_const(included_col_stats,
-                              max_alt_count=max_alt_allele_count,
-                              min_major_allele_freq=min_major_allele_freq,
-                              allow_missing_data=allow_missing)
-    var_sites_ix = const_sites_ix.index[~const_sites_ix].to_list()
-    aln = aln.loc[:, included_sites_ix.to_list()]
-    output_aln(aln, var_sites_ix, outfile=out_var_aln, filter_const=not include_const)
-    base_counts = get_base_counts(included_col_stats, const_sites_ix)
+    const_sites_pos, var_sites_pos = is_const(included_col_stats,
+                                              max_alt_count=max_alt_allele_count,
+                                              min_major_allele_freq=min_major_allele_freq,
+                                              allow_missing_data=allow_missing)
+    output_aln(aln, var_sites_pos, outfile=out_var_aln, filter_const=not include_const)
+    base_counts = get_base_counts(included_col_stats, const_sites_pos)
     run_iqtree(
         out_var_aln,
         base_counts,
