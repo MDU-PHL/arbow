@@ -16,9 +16,14 @@ from .utils import IQTree
 from .version import __version__ as version
 
 
-logging.basicConfig(level=logging.INFO)
-logging.captureWarnings(capture=True)
-logger = logging
+# logging.captureWarnings(capture=True)
+logger = logging.getLogger(__name__)
+logger.propagate = False
+stream_log = logging.StreamHandler()
+log_format = logging.Formatter(fmt='arbow:%(levelname)s:%(asctime)s:%(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+stream_log.setFormatter(log_format)
+stream_log.setLevel(logging.INFO)
+logger.addHandler(stream_log)
 
 n_seqs = 0
 aln_length = 0
@@ -103,7 +108,7 @@ def fasta2df(fn, labels=(0.5, 1.0, 5.0), log=sys.stdout):
                 aln_length = seq_len
             else:
                 if seq_len != aln_length:
-                    logging.error(f"Sequences do not appear to be aligned. "
+                    logger.error(f"Sequences do not appear to be aligned. "
                                   f"Please run an alignment program, such as MAFTT "
                                   f"before using arbow")
                     sys.exit()
@@ -234,7 +239,7 @@ def is_const_by_count(col_data, max_alt_count, allow_missing=True):
     order to consider the site a constant site, run this function
     """
     miss = "allowing" if allow_missing else "not allowing"
-    logging.info(f"Filtering constant sites by {max_alt_count} max minor allele count and {miss} "
+    logger.info(f"Filtering constant sites by {max_alt_count} max minor allele count and {miss} "
                  f"missing sites.")
 
     try:
@@ -276,7 +281,7 @@ def is_const_by_freq(col_data, min_major_allele_freq, allow_missing=True):
     order to consider the site a constant site, run this function
     """
     miss = "allowing" if allow_missing else "not allowing"
-    logging.info(f"Filtering constant sites by {min_major_allele_freq} minimum major allele frequency"
+    logger.info(f"Filtering constant sites by {min_major_allele_freq} minimum major allele frequency"
                  f" and {miss} missing sites.")
     try:
         min_major_allele_freq = float(min_major_allele_freq)
@@ -312,7 +317,7 @@ def is_const(col_data, max_alt_count=None, min_major_allele_freq=None, allow_mis
     logger.info(f"Total constant sites: {sum(const)}")
     logger.info(f"Total variable sites: {sum(~const)}")
     if sum(~const) == 0:
-        logging.critical("Current filtering parameters resulted in no variable sites remaining."
+        logger.critical("Current filtering parameters resulted in no variable sites remaining."
                          " Try relaxing your search.")
         sys.exit(1)
     return const
@@ -332,23 +337,23 @@ def include_sites(col_data, max_missing_count=None, max_missing_proportion=None)
     if max_missing_proportion:
         # In this case, we need to calculate the number of missing sites based on
         # the total number of sequences, and then filter them out.
-        logging.info(f"Filtering out sites with > {max_missing_proportion} proportion of "
+        logger.info(f"Filtering out sites with > {max_missing_proportion} proportion of "
                      f"missing sites.")
         n_miss = max_missing_proportion * n_seqs
         included_ix = col_data.eval(f"n<={n_miss}")
         total_included_sites = sum(included_ix)
         total_removed_sites = sum(~included_ix)
-        logging.info(f"Removing {total_removed_sites} due to missing data.")
+        logger.info(f"Removing {total_removed_sites} due to missing data.")
     elif max_missing_count:
         # This case is easy, we just query the data.frame for columns that have at most
         # max_missing_count `n`s
-        logging.info(f"Filtering out sites with > {max_missing_count} sites.")
+        logger.info(f"Filtering out sites with > {max_missing_count} sites.")
         included_ix = col_data.eval(f"n<={max_missing_count}")
         total_included_sites = sum(included_ix)
         total_removed_sites = sum(~included_ix)
-        logging.info(f"Removing {total_removed_sites} due to missing data.")
+        logger.info(f"Removing {total_removed_sites} due to missing data.")
     else:
-        logging.warning("Not filtering out any sites with missing data.")
+        logger.warning("Not filtering out any sites with missing data.")
         included_ix = col_data.eval(f"n>=0")
         total_included_sites = sum(included_ix)
 
@@ -438,7 +443,7 @@ def run_iqtree(
     if not include_const:
         fconst = "{a},{c},{g},{t}".format(**base_counts)
         cmd += f" -fconst {fconst}"
-    logging.info(f"Running: {cmd}")
+    logger.info(f"Running: {cmd}")
     subprocess.run(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
