@@ -209,22 +209,93 @@ def test_major_allele_freq(aln_col, major_freq):
     return freq.max() >= major_freq
 
 
-def is_const(col_data, major_allele_freq, allow_missing_data=True):
-    logger.info("Finding constant sites...")
-    if allow_missing_data and major_allele_freq == 1:
+def is_const_by_count(col_data, max_alt_count, allow_missing=True):
+    """
+    If the user supplies a maximum count for the alternate allele in
+    order to consider the site a constant site, run this function
+    """
+    miss = "allowing" if allow_missing else "not allowing"
+    logging.info(f"Filtering constant sites by {max_alt_count} max minor allele count and {miss} "
+                 f"missing sites.")
+
+    try:
+        max_alt_count = int(max_alt_count)
+    except ValueError:
+        logger.critical("Maximum alternate count must be an integer")
+    if max_alt_count < 1:
+        logger.critical(f"Maximum alternate allele cannot be less than 1.")
+        sys.exit(1)
+    if max_alt_count > n_seqs/2:
+        logger.critical(f"Maximum alternate allele cannot be 1/2 of {n_seqs}")
+        sys.exit(1)
+    if allow_missing:
+        # if allow missing, then consider constant the sites those for which one of the
+        # possible bases (a,c,t,g) the count is equal to or larger than the
+        # total sequences in the alignment (number of entries in a column) minus the
+        # number of observed missing elements in the column minus the maximum allowed
+        # alternate alleles for example:
+        # max_alt_allele = 2
+        # allow_missing = True
+        # total_sequences = 100
+        # base count is:
+        # a = 88, c = 2, g = 0, t = 0, n = 10 ==> constant
+        # a = 89, c = 1, g = 0, t = 0, n = 10 ==> constant
+        # a = 90, c = 0, g = 0, t = 0, n = 10 ==> constant
+        # a = 87, c = 3, g = 0, t = 0, n = 10 ==> variable
+        # a = 95, c = 0, g = 0, t = 0, n = 5  ==> constant
+        # a = 95, c = 0, g = 3, t = 2, n = 0  ==> variable
+
+        const = col_data.apply(lambda x: any(x >= (n_seqs - max_alt_count - x.n)), axis=1)
+    else:
+        const = col_data.apply(lambda x: x.n == 0 and any(x >= (n_seqs - max_alt_count)), axis=1)
+    return const
+
+
+def is_const_by_freq(col_data, min_major_allele_freq, allow_missing=True):
+    """
+    If the user supplies a minimum allele frequency for the maximum allele in
+    order to consider the site a constant site, run this function
+    """
+    miss = "allowing" if allow_missing else "not allowing"
+    logging.info(f"Filtering constant sites by {min_major_allele_freq} minimum major allele frequency"
+                 f" and {miss} missing sites.")
+    try:
+        min_major_allele_freq = float(min_major_allele_freq)
+    except ValueError:
+        logger.critical("Minimum major allele frequency must be a float")
+    if min_major_allele_freq <= 0.5:
+        logger.critical("Major allele frequency cannot be less than or equal to 0.5")
+        sys.exit(1)
+    if min_major_allele_freq > 1.0:
+        logger.critical("Major allele frequency cannot be larger than 1.0")
+        sys.exit(1)
+    if allow_missing and min_major_allele_freq == 1.0:
         const = col_data.apply(lambda x: any(x == (n_seqs - x.n)), axis=1)
-    elif allow_missing_data and major_allele_freq < 1.0:
+    elif allow_missing and min_major_allele_freq < 1.0:
         const = col_data.apply(
-            lambda x: test_major_allele_freq(x, major_allele_freq), axis=1
-        )
-    elif major_allele_freq < 1.0:
-        const = col_data.apply(
-            lambda x: x.n == 0 and test_major_allele_freq(x, major_allele_freq), axis=1
+            lambda x: test_major_allele_freq(x, min_major_allele_freq), axis=1
         )
     else:
-        const = col_data.apply(lambda x: any(x == (n_seqs)) and x.n == 0, axis=1)
+        const = col_data.apply(
+            lambda x: x.n == 0 and test_major_allele_freq(x, min_major_allele_freq), axis=1
+        )
+    return const
+
+
+def is_const(col_data, max_alt_count=None, min_major_allele_freq=None, allow_missing_data=True):
+    logger.info("Finding constant sites...")
+    if max_alt_count is not None:
+        const = is_const_by_count(col_data, max_alt_count, allow_missing_data)
+    elif min_major_allele_freq is not None:
+        const = is_const_by_freq(col_data, min_major_allele_freq, allow_missing_data)
+    else:
+        const = col_data.apply(lambda x: any(x == n_seqs) and x.n == 0, axis=1)
     logger.info(f"Total constant sites: {sum(const)}")
     logger.info(f"Total variable sites: {sum(~const)}")
+    if sum(~const) == 0:
+        logging.critical("Current filtering parameters resulted in no variable sites remaining."
+                         " Try relaxing your search.")
+        sys.exit(1)
     return const
 
 
@@ -327,9 +398,21 @@ def default_prefix(file_type, outdir=None):
 )
 @click.option(
     "-x",
-    "--major-allele-freq",
-    help="If major allele frequency is equal or larger than consider the site constant.",
-    default=0.999,
+    "--min-major-allele-freq",
+    help="The minimum major allele frequency required to consider a site constant. Needs to be a float from 0.5 "
+         "to 1.0. (e.g., -x 0.99 means that in an alignment with 100 sequences, if a site has 99 As and 1 T, the site "
+         "will be considered constant). Ignored if -c is used.",
+    default=None,
+    show_default=True,
+)
+@click.option(
+    "-c",
+    "--max-alt-allele-count",
+    help="The maximum count of all alternate alleles for a site to be considered constant (the alternate alleles are "
+         "defined as all the bases with count less than the base with the largest count). (e.g., -c 1 means that "
+         "in an alignment with 100 sequences a site with 99 As and 1 T is considered constant."
+         "Needs to be an integer from 1 to 1/2 total seqs",
+    default=1,
     show_default=True,
 )
 @click.option(
@@ -432,7 +515,8 @@ def main(
     all_iupac,
     no_stream,
     max_missing,
-    major_allele_freq,
+    min_major_allele_freq,
+    max_alt_allele_count,
     out_var_aln,
     prefix,
     iqtree_threads,
@@ -460,7 +544,10 @@ def main(
     col_stats = get_per_column_summary(aln, all_iupac, not no_stream, log=log)
     included_sites_ix = include_sites(col_stats, max_missing=max_missing)
     included_col_stats = col_stats[included_sites_ix]
-    const_sites_ix = is_const(included_col_stats, major_allele_freq)
+    const_sites_ix = is_const(included_col_stats,
+                              max_alt_count=max_alt_allele_count,
+                              min_major_allele_freq=min_major_allele_freq,
+                              allow_missing_data=(not max_missing == 0))
     var_sites_ix = const_sites_ix.index[~const_sites_ix].to_list()
     aln = aln.loc[:, included_sites_ix.to_list()]
     output_aln(aln, var_sites_ix, outfile=out_var_aln, filter_const=not include_const)
