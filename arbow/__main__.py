@@ -12,6 +12,7 @@ from scipy import stats # noqa
 from Bio import SeqIO
 from Bio.Alphabet.IUPAC import IUPACAmbiguousDNA
 
+from .utils import IQTree
 from .version import __version__ as version
 
 
@@ -387,6 +388,7 @@ def run_iqtree(
     aln_fn,
     base_counts,
     pre,
+    iqtree: IQTree,
     mset="HKY,TIM2,GTR",
     mfreq="F",
     mrate="G,R",
@@ -395,10 +397,38 @@ def run_iqtree(
     alrt=1000,
     threads=8,
     include_const=False,
+    use_ref_as_outgroup=None,
+    iqtree_outgroup=None
 ):
-    cmd = f"iqtree -s {aln_fn} -pre {pre} " \
-          f"-mset {mset} -mfreq {mfreq} -mrate {mrate} -cmax {cmax} " \
-          f"-bb {bb} -alrt {alrt} -nt {threads}"
+    if iqtree.version == 1:
+        cmd = f"{iqtree} -s {aln_fn} -pre {pre} " \
+              f"-mset {mset} -mfreq {mfreq} -mrate {mrate} -cmax {cmax} " \
+              f"-bb {bb} -alrt {alrt} -nt {threads}"
+    else:
+        cmd = f"{iqtree} -s {aln_fn} --prefix {pre} -T {threads} " \
+              f"--ufboot {bb} --alrt {alrt} " \
+              f"--mset {mset} -mfreq {mfreq} -mrate {mrate} --cmax {cmax}"
+    # There are two cases to consider when adding an outgroup
+    # 1. The user wants to simply use the reference as the outgroup
+    # 2. The user wants to specify a particular taxon (or list of taxa)
+    #    as the outgroup
+    # I am assuming that one would be more likely to want to use the ref
+    # as the outgroup, however, I do add a check here in case the user
+    # unintentionally specifies both options in the command line.
+    # So, first we have the assumed predominant use case
+    if use_ref_as_outgroup:
+        cmd += f" -o {use_ref_as_outgroup}"
+    # this is the use case we want to consider as well, but we must be
+    # careful to make sure that use_ref_as_outgroup is not specified as
+    # well, otherwise we are unclear what the user would want
+    if iqtree_outgroup and not use_ref_as_outgroup:
+        cmd += f" -o {iqtree_outgroup}"
+    # if the user's intentions are unclear, make a guess and issue
+    # a warning to alert the user of what we have done
+    if iqtree_outgroup and use_ref_as_outgroup:
+        logger.warning("You specified both --use-ref-as-outgroup and --iqtree-outgroup-id "
+                       "Using the reference as the outgroup!"
+                       "If that is incorrect, please only specify --iqtree-outgroup-id")
     if not include_const:
         fconst = "{a},{c},{g},{t}".format(**base_counts)
         cmd += f" -fconst {fconst}"
@@ -490,6 +520,30 @@ def default_prefix(file_type, outdir: str = None):
     help="Prefix to append to IQTree output files.",
 )
 @click.option(
+    "-iv",
+    "--iqtree-version",
+    default="2",
+    show_default=True,
+    help="Version of IQTree to use.",
+    type=click.Choice(["1", "2"])
+)
+@click.option(
+    "-ip",
+    "--iqtree-path",
+    show_default=True,
+    help="Path to iqtree executable",
+    envvar="PATH",
+    type=click.Path(),
+    multiple=True
+)
+@click.option(
+    "-ie",
+    "--iqtree-exec",
+    show_default=True,
+    help="The IQTree executable",
+    default="iqtree2"
+)
+@click.option(
     "-t",
     "--iqtree-threads",
     default=1,
@@ -538,10 +592,26 @@ def default_prefix(file_type, outdir: str = None):
     help="Maximum number of rate categories to test.",
 )
 @click.option(
+    "-io",
+    "--iqtree-outgroup",
+    default=None,
+    show_default=True,
+    help="ID(s) of samples to be used as outgroup in IQTree. (e.g., single: sample_1, "
+         "multiple: 'sample_2,sample_3'. This option is ignore if --use-ref-as-outgroup is "
+         "selected.",
+)
+@click.option(
     "-r",
     "--ref-id",
     default="MN908947.3",
     help="Sequence ID of the reference",
+    show_default=True,
+)
+@click.option(
+    "-u",
+    "--use-ref-as-outgroup",
+    is_flag=True,
+    help="Use the reference sequence as the outgroup in IQTree",
     show_default=True,
 )
 @click.option(
@@ -580,6 +650,9 @@ def main(
     max_alt_allele_count,
     out_var_aln,
     prefix,
+    iqtree_version,
+    iqtree_path,
+    iqtree_exec,
     iqtree_threads,
     iqtree_models,
     iqtree_freq,
@@ -587,12 +660,16 @@ def main(
     iqtree_cmax,
     iqtree_bb,
     iqtree_alrt,
+    iqtree_outgroup,
     ref_id,
+    use_ref_as_outgroup,
     five_prime_end,
     three_prime_start,
     include_const,
     log,
 ):
+    iqtree = IQTree(iqtree_path, iqtree_exec, iqtree_version)
+    iqtree.check_version()
     # outfa = default_prefix("arbow-clean-seqs") + ".fa"
     # fasta = clean_seqs(fasta, outfa)
     if max_missing_count_deprecated is not None:
@@ -631,6 +708,7 @@ def main(
         out_var_aln,
         base_counts,
         prefix,
+        iqtree=iqtree,
         mset=iqtree_models,
         mfreq=iqtree_freq,
         mrate=iqtree_rates,
@@ -639,6 +717,8 @@ def main(
         threads=iqtree_threads,
         cmax=iqtree_cmax,
         include_const=include_const,
+        use_ref_as_outgroup=ref_id if use_ref_as_outgroup else None,
+        iqtree_outgroup=iqtree_outgroup
     )
     output_separate_trees(prefix)
     logger.info(
