@@ -4,7 +4,6 @@ import datetime
 import re
 import pathlib
 import warnings
-
 import click
 import sys
 import pandas as pd
@@ -24,6 +23,7 @@ n_seqs = 0
 aln_length = 0
 
 
+# noinspection PyUnusedLocal
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
@@ -61,9 +61,10 @@ def clean_seqs(fasta, outfasta, log):
             #  3. if we have no gaps
             if n_gaps > 1:
                 len_gaps = [len(g) for g in gaps]
-                stat_summary = stats.describe(len_gaps)
+                stat_summary: pd.Series = stats.describe(len_gaps)
                 print(
-                    f"[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{stat_summary.mean:0.3}\t{stat_summary.variance:0.3}\t{stat_summary.minmax[0]}\t{stat_summary.minmax[1]}",
+                    f'[RSQ]{rec_id}\t{len_seq}\t{n_gaps}\t{stat_summary.mean:0.3}\t{stat_summary.variance:0.3}\t'
+                    f'{stat_summary.minmax[0]}\t{stat_summary.minmax[1]}',
                     file=log,
                 )
             elif n_gaps == 1:
@@ -87,6 +88,7 @@ def run_maftt(fasta):
     logger.info("Alignment ready...")
 
 
+# noinspection PyPep8Naming
 def fasta2df(fn, labels=(0.5, 1.0, 5.0), log=sys.stdout):
     logger.info("Loading FASTA alignment...")
     global n_seqs
@@ -116,13 +118,13 @@ def fasta2df(fn, labels=(0.5, 1.0, 5.0), log=sys.stdout):
 def trim_aln(aln_df, ref_seq="MN908947.3", five_prime_end=265, three_prime_start=29675):
     try:
         logger.info("Trimming according to ref sequence...")
-        missing_in_ref = aln_df.loc[ref_seq,].apply(lambda nuc: nuc == "n")
+        missing_in_ref = aln_df.loc[ref_seq, ].apply(lambda nuc: nuc == "n")
         logger.info(f"Found {sum(missing_in_ref)} introduced gaps into the ref...")
         df_ref = aln_df.loc[:, ~missing_in_ref]
         logger.info(f"New alignment length: {df_ref.shape[1]}...")
         logger.info("Trimming 5' and 3' UTR regions...")
         df_ref.columns = list(range(1, df_ref.shape[1] + 1))
-        df_ref = df_ref.loc[:, (five_prime_end + 1) : (three_prime_start - 1)]
+        df_ref = df_ref.loc[:, (five_prime_end + 1): (three_prime_start - 1)]
         logger.info(f"Clean alignment length: {df_ref.shape[1]}")
     except KeyError:
         logger.critical(f"Did not find any sequence with id {ref_seq} in alignment!")
@@ -141,9 +143,9 @@ def scrub_seq(seq, ref, window, threshold, substitution="*"):
     """
     new_seq = seq
     for i in range(0, len(seq)):
-        q = seq[i : (i + window)]
+        q = seq[i: (i + window)]
         if len(q) == window:
-            r = ref[i : (i + window)]
+            r = ref[i: (i + window)]
             total_var = 0
             total_n = 0
             var_pos = []
@@ -159,13 +161,13 @@ def scrub_seq(seq, ref, window, threshold, substitution="*"):
                 subs = "".join(
                     [b if k not in var_pos else substitution for k, b in enumerate(q)]
                 )
-                new_seq = new_seq[:i] + subs + new_seq[(i + 8) :]
+                new_seq = new_seq[:i] + subs + new_seq[(i + 8):]
     return new_seq
 
 
 def remove_gaps(seq, ix=None):
     if ix is None:
-        ix = [i.start() for i in re.finditer("-", seq)]
+        ix = [i.start() for i in re.finditer('-', seq)]
     return "".join([b for i, b in enumerate(seq) if i not in ix]), ix
 
 
@@ -174,7 +176,7 @@ def summary(row, letters, stream=True, fmt_string=None, log=sys.stdout):
     for index, value in row.items():
         try:
             bases[value] += 1
-        except Exception:
+        except KeyError:
             bases["n"] += 1
     if stream and fmt_string:
         print(fmt_string.format(pos=row.name, **bases), file=log)
@@ -188,9 +190,9 @@ def get_per_column_summary(tab, all_iupac=True, stream=True, log=sys.stdout):
     if all_iupac:
         nucs += sorted(list(alphabet.letters[5:-1]))
     nucs += ["N"]
-    letters = [l.lower() for l in nucs]
+    letters = [nuc.lower() for nuc in nucs]
     if stream:
-        fmt_string = "[ALN]{pos}\t" + "\t".join([f"{{{l}}}" for l in letters])
+        fmt_string = "[ALN]{pos}\t" + "\t".join([f"{{{letter}}}" for letter in letters])
         header = "[ALN]pos\t" + "\t".join(letters)
         print(header, file=log)
     else:
@@ -371,7 +373,7 @@ def output_aln(aln, pos, outfile="var.aln", filter_const=True):
 
 def output_separate_trees(prefix):
     logger.info("Writing out separate trees for BB and aLRT....")
-    p = re.compile("\\)(\\d+\\.?\\d?\\d?)\\/(\\d+):")
+    p = re.compile("\\)(\\d+\\.?\\d?\\d?)/(\\d+):")
     treefile = prefix + ".treefile"
     bbtree = prefix + "_bb.treefile"
     alrttree = prefix + "_alrt.treefile"
@@ -402,7 +404,7 @@ def run_iqtree(
     subprocess.run(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
-def default_prefix(file_type, outdir=None):
+def default_prefix(file_type, outdir: str = None):
     if outdir is not None:
         file_type = pathlib.Path(outdir).joinpath(file_type)
     return f"{file_type}-" + datetime.datetime.strftime(
@@ -638,7 +640,7 @@ def main(
     )
     output_separate_trees(prefix)
     logger.info(
-        "Support values on tree are SH-aLRT (good support is >= 80%) and UFboot (good support is >= 95%)"
+        'Support values on tree are SH-aLRT (good support is >= 80%) and UFboot (good support is >= 95%)'
     )
 
 
