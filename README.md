@@ -109,6 +109,26 @@ Options:
                                  than consider the site constant.  [default:
                                  0.99]
 
+  -x, --min-major-allele-freq FLOAT RANGE
+                                  The minimum major allele frequency required
+                                  to consider a site constant. Needs to be a
+                                  float from 0.5 to 1.0. (e.g., -x 0.99 means
+                                  that in an alignment with 100 sequences, if
+                                  a site has 99 As and 1 T, the site will be
+                                  considered constant). Ignored if -c is used.
+
+  -c, --max-alt-allele-count INTEGER
+                                  The maximum count of all alternate alleles
+                                  for a site to be considered constant (the
+                                  alternate alleles are defined as all the
+                                  bases with count less than the base with the
+                                  largest count). (e.g., -c 1 means that in an
+                                  alignment with 100 sequences a site with 99
+                                  As and 1 T is considered constant.Needs to
+                                  be an integer from 1 to 1/2 total seqs
+                                  [default: 1]
+
+
   -o, --out-var-aln TEXT        Filename for alignment of variable sites.
                                 [default: aln-2020-04-07-150443.aln]
 
