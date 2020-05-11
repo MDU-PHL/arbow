@@ -396,7 +396,9 @@ def run_iqtree(
     threads=8,
     include_const=False,
 ):
-    cmd = f"iqtree -s {aln_fn} -pre {pre} -mset {mset} -mfreq {mfreq} -mrate {mrate} -bb {bb} -alrt {alrt} -nt {threads}"
+    cmd = f"iqtree -s {aln_fn} -pre {pre} " \
+          f"-mset {mset} -mfreq {mfreq} -mrate {mrate} -cmax {cmax} " \
+          f"-bb {bb} -alrt {alrt} -nt {threads}"
     if not include_const:
         fconst = "{a},{c},{g},{t}".format(**base_counts)
         cmd += f" -fconst {fconst}"
