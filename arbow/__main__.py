@@ -3,6 +3,8 @@ import subprocess
 import datetime
 import re
 import pathlib
+import warnings
+
 import click
 import sys
 import pandas as pd
@@ -15,6 +17,7 @@ from .version import __version__ as version
 
 
 logging.basicConfig(level=logging.INFO)
+logging.captureWarnings(capture=True)
 logger = logging
 
 n_seqs = 0
@@ -306,18 +309,41 @@ def is_const(col_data, max_alt_count=None, min_major_allele_freq=None, allow_mis
     return const
 
 
-def include_sites(col_data, max_missing=20):
+def include_sites(col_data, max_missing_count=None, max_missing_proportion=None):
     """
     Identify the sites to be included in the final alignment based on the 
-    number of missing data points. 
+    number of missing data points.
+
+    Give proportion of missing sites precedence.
 
     Input: a table of counts of bases per column in the alignment, including missing or 
            gappy sites
     Output: a boolean Pandas Series indicating the position of the sites to keep
     """
-    included_ix = col_data.eval(f"n<={max_missing}")
-    logger.info(f"Total included sites: {sum(included_ix)}")
-    logger.info(f"Total removed sites: {sum(~included_ix)}")
+    if max_missing_proportion:
+        # In this case, we need to calculate the number of missing sites based on
+        # the total number of sequences, and then filter them out.
+        logging.info(f"Filtering out sites with > {max_missing_proportion} proportion of "
+                     f"missing sites.")
+        n_miss = max_missing_proportion * n_seqs
+        included_ix = col_data.eval(f"n<={n_miss}")
+        total_included_sites = sum(included_ix)
+        total_removed_sites = sum(~included_ix)
+        logging.info(f"Removing {total_removed_sites} due to missing data.")
+    elif max_missing_count:
+        # This case is easy, we just query the data.frame for columns that have at most
+        # max_missing_count `n`s
+        logging.info(f"Filtering out sites with > {max_missing_count} sites.")
+        included_ix = col_data.eval(f"n<={max_missing_count}")
+        total_included_sites = sum(included_ix)
+        total_removed_sites = sum(~included_ix)
+        logging.info(f"Removing {total_removed_sites} due to missing data.")
+    else:
+        logging.warning("Not filtering out any sites with missing data.")
+        included_ix = col_data.eval(f"n>=0")
+        total_included_sites = sum(included_ix)
+
+    logger.info(f"Total included sites: {total_included_sites}")
     return included_ix
 
 
@@ -397,11 +423,32 @@ def default_prefix(file_type, outdir=None):
 )
 @click.option("-s", "--no-stream", is_flag=True, help="Stop streaming stats to console")
 @click.option(
-    "-mm",
-    "--max-missing",
-    default=20,
-    help="Remove sites with 'mm' missing sites or more",
+    "-mc",
+    "--max-missing-count",
+    default=None,
+    help="Sites with more than max-missing-count will be removed from the alignment. "
+         "This option is ignored if -mp is used.",
     show_default=True,
+    type=int,
+)
+@click.option(
+    "-mm",
+    "--max-missing-count-deprecated",
+    default=None,
+    help="Sites with more than max-missing-count will be removed from the alignment. "
+         "This option is ignored if -mp is used. "
+         "THIS OPTION IS NOW DEPRECATED IN FAVOUR OF -mc",
+    show_default=True,
+    type=int,
+)
+@click.option(
+    "-mp",
+    "--max-missing-proportion",
+    default=None,
+    help="Sites with more than max-missing-proportion of the sites missing will be "
+         "removed from the alignment. This option takes precedence over -mp.",
+    show_default=True,
+    type=float,
 )
 @click.option(
     "-x",
@@ -411,6 +458,7 @@ def default_prefix(file_type, outdir=None):
          "will be considered constant). Ignored if -c is used.",
     default=None,
     show_default=True,
+    type=float,
 )
 @click.option(
     "-c",
@@ -421,6 +469,7 @@ def default_prefix(file_type, outdir=None):
          "Needs to be an integer from 1 to 1/2 total seqs",
     default=1,
     show_default=True,
+    type=int,
 )
 @click.option(
     "-o",
@@ -520,7 +569,9 @@ def main(
     fasta,
     all_iupac,
     no_stream,
-    max_missing,
+    max_missing_count,
+    max_missing_count_deprecated,
+    max_missing_proportion,
     min_major_allele_freq,
     max_alt_allele_count,
     out_var_aln,
@@ -540,6 +591,10 @@ def main(
 ):
     # outfa = default_prefix("arbow-clean-seqs") + ".fa"
     # fasta = clean_seqs(fasta, outfa)
+    if max_missing_count_deprecated is not None:
+        warnings.warn("-mm has been deprecated in favour of -mc. "
+                      "-mm will be removed in v0.8.0", DeprecationWarning)
+        max_missing_count = max_missing_count_deprecated
     aln = fasta2df(fasta, log=log)
     aln = trim_aln(
         aln,
@@ -548,12 +603,22 @@ def main(
         three_prime_start=three_prime_start,
     )
     col_stats = get_per_column_summary(aln, all_iupac, not no_stream, log=log)
-    included_sites_ix = include_sites(col_stats, max_missing=max_missing)
+    included_sites_ix = include_sites(col_stats,
+                                      max_missing_count=max_missing_count,
+                                      max_missing_proportion=max_missing_proportion)
     included_col_stats = col_stats[included_sites_ix]
+    if max_missing_count is None and max_missing_proportion is None:
+        allow_missing = False
+    elif max_missing_count is not None and max_missing_count > 0:
+        allow_missing = True
+    elif max_missing_proportion is not None and max_missing_proportion > 0:
+        allow_missing = True
+    else:
+        allow_missing = False
     const_sites_ix = is_const(included_col_stats,
                               max_alt_count=max_alt_allele_count,
                               min_major_allele_freq=min_major_allele_freq,
-                              allow_missing_data=(not max_missing == 0))
+                              allow_missing_data=allow_missing)
     var_sites_ix = const_sites_ix.index[~const_sites_ix].to_list()
     aln = aln.loc[:, included_sites_ix.to_list()]
     output_aln(aln, var_sites_ix, outfile=out_var_aln, filter_const=not include_const)
