@@ -12,16 +12,27 @@ term for an [arborist](https://en.wikipedia.org/wiki/Arborist) in Australia.
 The goal of `arbow` is to automate and simplify the production of trees from multiple sequence alignments. The tool 
 has been developed in the context of viral phylogenomics.
 
-In the current version (`0.5.*`) it:
+***NOTE*** SOME DEFAULTS HAVE CHANGED in `v0.6.*`:
+    - iqtree 2 is assumed by default, with an executable called `iqtree` (these come with new options to set your iqtree environment: `-iv` or `--iqtree-version` to specify the version (either 1 or 2), `-ip` or `--iqtree-path` to specify the path to the executable (assumes `$PATH` by default), and `-ie` or `--iqtree-exec` to define the executable (`iqtree2` by default))
+    - no sites with missing data are filtered by default (use `-mp` or `-mc` to change this now)
+    - constant sites are by default those that have 100% of a single base (use `-x` or `-c` to change this)
+    
+
+In the current version (`0.6.*`) it:
 
 1. Reads an alignment in `multiFASTA` format
 2. Calculates stats for each sequence in the alignment
 3. Trims 5/3 prime UTR regions --- defaults set to SARS-COV-2 (Genbank accession: `NC_045512.2`)
 4. Calculates stats per column in the alignment
-5. Allows the user to set a threshold of tolerable missing data in a column, and removes all non-conforming columns from the alignment
-6. From the remaining columns, `arbow` finds all the `constant` columns according to two `user` defined criteria: `allow missing data` (i.e., a column with missing data can still count to towards `constant` sites if it meets other criteria), and the frequency of the major allow is equal to or larger than a trheshold (i.e., if the threshold is set to 0.99 and there are 100 samples, 99 of which are `A` and one is `G`, that column would be counted as a constant `A`). Filtering by frequency allows one to remove potential sequencing error.
+5. Allows the user to set a threshold of tolerable missing data in a column, and removes all non-conforming columns from the alignment. This can be defined in two ways:
+    * using the `-mp` flag which defines a proportion of missing sites (e.g., 0.01 means at most 1% missing data)
+    * using the `-mc` flag which defines the count of missing sites (e.g., 2 means at most 2 missing sites)
+    * one can still  use `-mm` option, but that has been deprecated in favour of the `-mc` option. `-mm` will be removed in version `v0.8.0`.
+6. From the remaining columns, `arbow` finds all the `constant` columns according to two `user` defined criteria: `allow missing data` (i.e., a column with missing data can still count to towards `constant` sites if it meets other criteria), and a defined threshold of variation. This process one to smooth over any potential sequencing errors. This threshold can be defined in two ways:
+    * the frequency of the major allow is equal to or larger than a threshold (i.e., if the threshold is set to 0.99 and there are 100 samples, 99 of which are `A` and one is `G`, that column would be counted as a constant `A`) --- use the `-x` option.
+    * if the total count of minor alleles is equal to or smaller than a threshold (i.e., if the threshold is 2 and there are 100 samples, 98 of which are `A`, 1 is `C` and 1 is `T`, that column would be considered as a constant `A`) --- use the `-c` option. 
 7. It then filters out all the `variable` columns, and outputs the variable alignment as a `multiFASTA` alignment.
-8. It runs `IQTree` with a few sensible `presets`
+8. It runs `IQTree` with a few sensible `presets` --- it is now possible to run both IQTree1 and IQTree2. 
 
 Currently, in step `4` above, columns that have a single observed `nucleotide` (e.g., `C`) but still have missing data that were not filtered out in step `3` are counted towards the overall frequency of that `base` in the alignment. In other words, if a `user` specifies a maximum number of 20 missing bases, and a column with 5 missing bases but with `A` in all other samples, that column will count towards the overall frequency of `A` in the alignment (i.e., majority consensus imputation). This assumptions is less risky the larger the number of samples in the alignment.
 
@@ -32,7 +43,7 @@ Tests are underway to figure out how these assumptions might affect the output.
 ## Dependencies
 
 1. Python >=3.6
-2. IQTree 1.6+ (not tested on IQTree 2 as it is not production ready yet)
+2. IQTree 1.6+ or 2.0.4+
 3. BioPython
 4. Pandas
 5. NumPy
@@ -56,7 +67,7 @@ pip<3> install arbow
 ## Running
 
 1. Generate a mulitple sequence alignment with your favourite aligner (e.g., MAFTT). Output a `multiFASTA` file.
-2. Run `arbow <aln.fa>`
+2. Run `arbow <options> <aln.fa>`
 3. Open `tree-YYYY-MM-DD_HHMMSS.treefile` in your favourite tree viewer (e.g, FigTree)
 4. Open `tree-YYYY-MM-DD_HHMMSS_bb.treefile` or `tree-YYYY-MM-DD_HHMMSS_alrt.treefile` for branches with `ultra-fast bootstrap` support or `SH-aLRT` support only, respectively.
 
@@ -89,6 +100,7 @@ Options:
                                 stats?
 
   -s, --no-stream               Stop streaming stats to console
+
   -mm, --max-missing INTEGER    Remove sites with 'mm' missing sites or more
                                 [default: 20]
 
@@ -102,7 +114,14 @@ Options:
   -p, --prefix TEXT             Prefix to append to IQTree output files.
                                 [default: tree-2020-04-07-150443]
 
+  -iv, --iqtree-version [1|2]   Version of IQTree to use.  [default: 2]
+
+  -ip, --iqtree-path PATH       Path to iqtree executable
+
+  -ie, --iqtree-exec TEXT       The IQTree executable  [default: iqtree2]
+
   -t, --iqtree-threads INTEGER  Number of cores to run IQtree  [default: 4]
+
   -m, --iqtree-models TEXT      Substitution models to test.  [default:
                                 HKY,TIM2,GTR]
 
@@ -114,11 +133,20 @@ Options:
   -a, --iqtree-alrt INTEGER     Number of replicates to perform SH-aLRT.
                                 [default: 1000]
 
-  -c, --iqtree-cmax INTEGER     Maximum number of rate categories to test.
+  ---iqtree-cmax INTEGER        Maximum number of rate categories to test.
                                 [default: 5]
+
+  -io, --iqtree-outgroup TEXT     ID(s) of samples to be used as outgroup in
+                                  IQTree. (e.g., single: sample_1, multiple:
+                                  'sample_2,sample_3'. This option is ignore
+                                  if --use-ref-as-outgroup is selected.
+
 
   -r, --ref-id TEXT              Sequence ID of the reference  [default:
                                  MN908947.3]
+
+  -u, --use-ref-as-outgroup       Use the reference sequence as the outgroup
+                                  in IQTree  [default: False]
 
   --five-prime-end INTEGER       Last base of the 5' UTR region in 1-index in
                                  the ref sequence  [default: 265]
@@ -139,14 +167,14 @@ Options:
 
 ## Default behaviour explained
 
-By default, `arbow` will remove any site in the alignment that has `20` missing data points or more, will trim the 5' and 3' UTR regions, and will consider as constant any site that has a major allele frequency larger or equal to 0.997.
+By default, `arbow` will trim the 5' and 3' UTR regions.
 
 ### Remove sites with any gaps in the alignment 
 
 Let us say that you wish to remove all sites in the alignment that have **any** missing data, and retain all complete columns:
 
 ```
-arbow -x 1.0 -mm 0 <in.aln>
+arbow -x 1.0 -mc 0 <in.aln>
 ```
 
 ### Keep all sites in an alignment (i.e., skip any filtering)
@@ -154,7 +182,7 @@ arbow -x 1.0 -mm 0 <in.aln>
 Let us say that you wish to keep all sites in the alignment, and you have an alignment with 200 sequences:
 
 ```
-arbow -x 1.0 -m 200 <in.aln>
+arbow <in.aln>
 ```
 
 ### Keep constant sites in the clean alignment
