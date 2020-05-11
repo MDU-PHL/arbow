@@ -8,9 +8,9 @@ import logging
 import sys
 from shutil import which
 
-logging.getLogger(__name__)
+
 logging.basicConfig(level=logging.INFO)
-logger = logging
+logger = logging.getLogger(__name__)
 
 
 class IQTree:
@@ -38,10 +38,10 @@ class IQTree:
                               encoding='utf8')
         version_semver = version_str.findall(proc.stdout)
         if len(version_semver) == 0:
-            logging.error(f"Was not able to parse version string from {self.iq_path}")
+            logger.error(f"Was not able to parse version string from {self.iq_path}")
             sys.exit(1)
         if len(version_semver) > 1:
-            logging.warning(f"Found too many version strings, taking the first")
+            logger.warning(f"Found too many version strings, taking the first")
         self.version_semver = version_semver[0]
 
     def get_abs_exec(self):
@@ -59,15 +59,15 @@ class IQTree:
         self._iqtree_version()
         major, *_ = [int(version) for version in self.version_semver.split(".")]
         if major == self.version:
-            logging.info(f"Expected IQTree version {self.version} and found {self.version_semver}")
+            logger.info(f"Expected IQTree version {self.version} and found {self.version_semver}")
             return
         if major < self.version:
-            logging.error(f"Expected IQTree version {self.version} and found {self.version_semver}. Please upgrade!")
+            logger.error(f"Expected IQTree version {self.version} and found {self.version_semver}. Please upgrade!")
             sys.exit(1)
         if major > self.version:
-            logging.error(f"Expected IQTree version {self.version} and found {self.version_semver}. Please downgrade!")
+            logger.error(f"Expected IQTree version {self.version} and found {self.version_semver}. Please downgrade!")
             sys.exit(1)
-        logging.error("Something went wrong when testing for IQTree version. "
+        logger.error("Something went wrong when testing for IQTree version. "
                       "Please file an issue with https://github.com/MDU-PHL/arbow/issues")
         sys.exit(1)
 
