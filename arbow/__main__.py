@@ -77,11 +77,14 @@ def clean_seqs(fasta, outfasta, log):
 
 
 def run_maftt(fasta):
+    """
+    TODO --- still need to be implemented
+    """
     logger.info("Running maftt...")
     logger.info("Alignment ready...")
 
 
-def fasta2df(fn, labels=[0.5, 1.0, 5.0], log=sys.stdout):
+def fasta2df(fn, labels=(0.5, 1.0, 5.0), log=sys.stdout):
     logger.info("Loading FASTA alignment...")
     global n_seqs
     global aln_length
