@@ -597,7 +597,7 @@ def main(
     # fasta = clean_seqs(fasta, outfa)
     if max_missing_count_deprecated is not None:
         warnings.warn("-mm has been deprecated in favour of -mc. "
-                      "-mm will be removed in v0.8.0", DeprecationWarning)
+                      "-mm will be removed in v0.8.0", FutureWarning)
         max_missing_count = max_missing_count_deprecated
     aln = fasta2df(fasta, log=log)
     aln = trim_aln(
