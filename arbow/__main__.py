@@ -472,7 +472,6 @@ def default_prefix(file_type, outdir=None):
     help="Number of replicates to perform SH-aLRT.",
 )
 @click.option(
-    "-c",
     "--iqtree-cmax",
     default=5,
     show_default=True,
