@@ -264,6 +264,7 @@ def is_const_by_count(col_data, max_alt_count, allow_missing=True):
         # base count is:
         # a = 88, c = 2, g = 0, t = 0, n = 10 ==> constant
         # a = 89, c = 1, g = 0, t = 0, n = 10 ==> constant
+        # a = 88, c = 1, g = 1, t = 0, n = 10 ==> constant
         # a = 90, c = 0, g = 0, t = 0, n = 10 ==> constant
         # a = 87, c = 3, g = 0, t = 0, n = 10 ==> variable
         # a = 95, c = 0, g = 0, t = 0, n = 5  ==> constant
