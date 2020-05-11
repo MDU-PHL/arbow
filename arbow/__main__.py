@@ -1,7 +1,6 @@
 import logging
 import subprocess
 import datetime
-import multiprocessing
 import re
 import pathlib
 import click
