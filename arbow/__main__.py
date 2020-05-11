@@ -4,8 +4,8 @@ import datetime
 import re
 import pathlib
 import warnings
-import click
 import sys
+import click
 import pandas as pd
 import numpy as np
 from scipy import stats # noqa
