@@ -13,9 +13,10 @@ The goal of `arbow` is to automate and simplify the production of trees from mul
 has been developed in the context of viral phylogenomics.
 
 ***NOTE*** SOME DEFAULTS HAVE CHANGED in `v0.6.*`:
-    - iqtree 2 is assumed by default, with an executable called `iqtree` (these come with new options to set your iqtree environment: `-iv` or `--iqtree-version` to specify the version (either 1 or 2), `-ip` or `--iqtree-path` to specify the path to the executable (assumes `$PATH` by default), and `-ie` or `--iqtree-exec` to define the executable (`iqtree2` by default))
-    - no sites with missing data are filtered by default (use `-mp` or `-mc` to change this now)
-    - constant sites are by default those that have 100% of a single base (use `-x` or `-c` to change this)
+
+   - iqtree 2 is assumed by default, with an executable called `iqtree` (these come with new options to set your iqtree environment: `-iv` or `--iqtree-version` to specify the version (either 1 or 2), `-ip` or `--iqtree-path` to specify the path to the executable (assumes `$PATH` by default), and `-ie` or `--iqtree-exec` to define the executable (`iqtree2` by default))
+   - no sites with missing data are filtered by default (use `-mp` or `-mc` to change this now)
+   - constant sites are by default those that have 100% of a single base (use `-x` or `-c` to change this)
     
 
 In the current version (`0.6.*`) it:
@@ -66,7 +67,7 @@ pip<3> install arbow
 
 ## Running
 
-1. Generate a mulitple sequence alignment with your favourite aligner (e.g., MAFTT). Output a `multiFASTA` file.
+1. Generate a multiple sequence alignment with your favourite aligner (e.g., MAFTT). Output a `multiFASTA` file.
 2. Run `arbow <options> <aln.fa>`
 3. Open `tree-YYYY-MM-DD_HHMMSS.treefile` in your favourite tree viewer (e.g, FigTree)
 4. Open `tree-YYYY-MM-DD_HHMMSS_bb.treefile` or `tree-YYYY-MM-DD_HHMMSS_alrt.treefile` for branches with `ultra-fast bootstrap` support or `SH-aLRT` support only, respectively.
