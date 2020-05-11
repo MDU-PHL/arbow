@@ -450,7 +450,7 @@ def default_prefix(file_type, outdir: str = None):
     help="Sites with more than max-missing-proportion of the sites missing will be "
          "removed from the alignment. This option takes precedence over -mp.",
     show_default=True,
-    type=float,
+    type=click.FloatRange(min=0, max=1),
 )
 @click.option(
     "-x",
@@ -460,7 +460,7 @@ def default_prefix(file_type, outdir: str = None):
          "will be considered constant). Ignored if -c is used.",
     default=None,
     show_default=True,
-    type=float,
+    type=click.FloatRange(min=0.5, max=1),
 )
 @click.option(
     "-c",
