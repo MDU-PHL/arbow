@@ -8,6 +8,9 @@ verify_ssl = true
 [packages]
 arbow = {editable = true,path = "."}
 e1839a8 = {editable = true,path = "."}
+biopython = "*"
+pandas = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.7"
