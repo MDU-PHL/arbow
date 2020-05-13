@@ -105,10 +105,6 @@ Options:
   -mm, --max-missing INTEGER    Remove sites with 'mm' missing sites or more
                                 [default: 20]
 
-  -x, --major-allele-freq FLOAT  If major allele frequency is equal or larger
-                                 than consider the site constant.  [default:
-                                 0.99]
-
   -x, --min-major-allele-freq FLOAT RANGE
                                   The minimum major allele frequency required
                                   to consider a site constant. Needs to be a
