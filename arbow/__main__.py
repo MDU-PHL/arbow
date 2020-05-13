@@ -8,6 +8,7 @@ import sys
 import click
 import pandas as pd
 import numpy as np
+from Bio.SeqIO.FastaIO import SimpleFastaParser
 from scipy import stats # noqa
 from Bio import SeqIO
 from Bio.Alphabet.IUPAC import IUPACAmbiguousDNA
@@ -38,12 +39,12 @@ def print_version(ctx, param, value):
 
 
 def count_base(seq, base):
-    return str(seq.seq).lower().count(base)
+    return seq.lower().count(base)
 
 
-def seq2series(seq):
-    seq_str = str(seq.seq).lower().replace("-", "n").replace(" ", "n")
-    return pd.Series(list(seq_str), name=seq.id)
+def seq2series(seq, seq_id):
+    seq_str = seq.lower().replace("-", "n").replace(" ", "n")
+    return pd.Series(list(seq_str), name=seq_id)
 
 
 def clean_seqs(fasta, outfasta, log):
@@ -102,26 +103,26 @@ def fasta2df(fn, labels=(0.5, 1.0, 5.0), log=sys.stdout):
     recs = []
     print("[SEQ]ID\tA\tC\tG\tT\tN\tPROP_MISS\tLENGTH\tSTATUS", file=log)
     with open(fn) as fasta:
-        for rec in SeqIO.parse(fasta, format="fasta"):
+        for seq_id, rec in SimpleFastaParser(fasta):
             seq_len = len(rec)
             if n_seqs == 0:
                 aln_length = seq_len
             else:
                 if seq_len != aln_length:
                     logger.error(f"Sequences do not appear to be aligned. "
-                                  f"Please run an alignment program, such as MAFTT "
-                                  f"before using arbow")
-                    sys.exit()
+                                 f"Please run an alignment program, such as MAFTT "
+                                 f"before using arbow")
+                    sys.exit(1)
             tA, tC, tG, tT = [count_base(rec, base) for base in ["a", "c", "g", "t"]]
             total_valid_bases = sum([tA, tC, tG, tT])
             tN = seq_len - total_valid_bases
             prop_missing = 100 * tN / seq_len
             lab = "*" * sum(np.array(labels) < prop_missing)
             print(
-                f"[SEQ]{rec.id}\t{tA}\t{tC}\t{tG}\t{tT}\t{tN}\t{100*tN/seq_len:.03}\t{seq_len}\t{lab}",
+                f"[SEQ]{seq_id}\t{tA}\t{tC}\t{tG}\t{tT}\t{tN}\t{100*tN/seq_len:.03}\t{seq_len}\t{lab}",
                 file=log,
             )
-            recs.append(seq2series(rec))
+            recs.append(seq2series(rec, seq_id))
             n_seqs += 1
     logger.info(f"Loaded {n_seqs} sequences")
     return pd.DataFrame(recs)
@@ -339,7 +340,7 @@ def include_sites(col_data, max_missing_count=None, max_missing_proportion=None)
     if max_missing_proportion:
         # In this case, we need to calculate the number of missing sites based on
         # the total number of sequences, and then filter them out.
-        logger.info(f"Filtering out sites with > {max_missing_proportion} proportion of "
+        logger.info(f"Filtering out sites with >{max_missing_proportion} proportion of "
                      f"missing sites.")
         n_miss = max_missing_proportion * n_seqs
         included_ix = col_data.eval(f"n<={n_miss}")
@@ -349,7 +350,7 @@ def include_sites(col_data, max_missing_count=None, max_missing_proportion=None)
     elif max_missing_count:
         # This case is easy, we just query the data.frame for columns that have at most
         # max_missing_count `n`s
-        logger.info(f"Filtering out sites with > {max_missing_count} sites.")
+        logger.info(f"Filtering out sites with >{max_missing_count} missing sites.")
         included_ix = col_data.eval(f"n<={max_missing_count}")
         total_included_sites = sum(included_ix)
         total_removed_sites = sum(~included_ix)
